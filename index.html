@@ -2,133 +2,80 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HKUST RWA Platform V6</title>
+    <title>HKUST RWA V7 (Multi-Sig)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
     <style>
-        :root { --sidebar-width: 260px; --primary-color: #2c3e50; --accent-color: #3498db; }
-        body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
-        
-        /* 侧边栏 */
-        .sidebar { height: 100vh; width: var(--sidebar-width); position: fixed; top: 0; left: 0; background: var(--primary-color); color: white; padding-top: 20px; z-index: 1000; transition: 0.3s; }
-        .sidebar-header { padding: 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 20px; }
-        .sidebar a { padding: 15px 25px; text-decoration: none; font-size: 0.95rem; color: #bdc3c7; display: block; transition: 0.2s; cursor: pointer; border-left: 4px solid transparent; }
-        .sidebar a:hover, .sidebar a.active { background: rgba(0,0,0,0.2); color: #fff; border-left-color: var(--accent-color); }
-        .sidebar i { width: 25px; text-align: center; margin-right: 10px; }
-
-        /* 主内容区 */
+        :root { --sidebar-width: 260px; --primary-color: #2c3e50; --accent-color: #e74c3c; }
+        body { background: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
+        .sidebar { height: 100vh; width: var(--sidebar-width); position: fixed; top: 0; left: 0; background: var(--primary-color); color: white; padding-top: 20px; }
+        .sidebar a { padding: 15px 25px; text-decoration: none; color: #bdc3c7; display: block; cursor: pointer; transition:0.2s; }
+        .sidebar a:hover, .sidebar a.active { background: rgba(255,255,255,0.1); color: #fff; border-left: 4px solid var(--accent-color); }
         .main-content { margin-left: var(--sidebar-width); padding: 20px; }
-        .top-bar { background: white; padding: 15px 30px; border-radius: 12px; box-shadow: 0 2px 15px rgba(0,0,0,0.04); display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        
-        /* 卡片与表格 */
-        .card-custom { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); background: white; margin-bottom: 20px; overflow: hidden; }
-        .card-header-custom { background: white; padding: 20px; border-bottom: 1px solid #f1f1f1; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
-        .table-custom th { background-color: #f8f9fa; font-weight: 600; color: #666; border-top: none; }
-        .table-custom td { vertical-align: middle; }
-
-        /* 资产卡片 */
-        .asset-card { transition: 0.3s; border: none; border-radius: 15px; overflow: hidden; background: white; box-shadow: 0 5px 15px rgba(0,0,0,0.05); height: 100%; position: relative; }
-        .asset-card:hover { transform: translateY(-5px); box-shadow: 0 15px 30px rgba(0,0,0,0.1); }
-        .asset-img { height: 180px; display: flex; align-items: center; justify-content: center; color: white; font-size: 2.5rem; font-weight: bold; position: relative; }
-        .asset-badge { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.6); color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; backdrop-filter: blur(5px); }
-
-        /* 状态徽章 */
-        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
-        .dot-green { background-color: #2ecc71; }
-        .dot-red { background-color: #e74c3c; }
-        
-        /* 页面切换 */
-        .view-section { display: none; animation: fadeIn 0.3s ease-in-out; }
+        .card-custom { border: none; border-radius: 12px; background: white; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .view-section { display: none; animation: fadeIn 0.3s; }
         .view-section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* 个人中心统计卡 */
-        .stat-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 12px; margin-bottom: 20px; }
-        .stat-num { font-size: 2.5rem; font-weight: bold; }
-        .stat-label { opacity: 0.8; font-size: 0.9rem; }
+        .ms-badge { font-size: 0.8rem; padding: 5px 10px; border-radius: 4px; background: #f1c40f; color: #333; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <nav class="sidebar">
-        <div class="sidebar-header">
-            <h4>🦁 RWA Lab V6</h4>
-            <small class="text-muted" style="font-size:0.7rem">Built for HKUST Demo</small>
-        </div>
-        <a onclick="nav('market')" class="active" id="nav-market"><i class="fas fa-store"></i> 资产市场 (Market)</a>
-        <a onclick="nav('profile')" id="nav-profile"><i class="fas fa-user-circle"></i> 个人中心 (Profile)</a>
-        <hr style="border-color: rgba(255,255,255,0.1); margin: 10px 20px;">
-        <small style="padding: 0 25px; color: #666; font-weight:bold; text-transform:uppercase;">Management</small>
-        <a onclick="nav('admin-assets')" id="nav-admin-assets"><i class="fas fa-box"></i> 资产管理</a>
-        <a onclick="nav('admin-users')" id="nav-admin-users"><i class="fas fa-users-cog"></i> 用户与机构管理</a>
-        <a onclick="nav('logs')" id="nav-logs"><i class="fas fa-history"></i> 全局审计日志</a>
+        <div class="text-center mb-4"><h4>🦁 RWA V7</h4><small class="text-muted">Multi-Sig Enabled</small></div>
+        <a onclick="nav('market')" class="active" id="nav-market"><i class="fas fa-store me-2"></i> 资产市场</a>
+        <a onclick="nav('profile')" id="nav-profile"><i class="fas fa-user-circle me-2"></i> 个人中心</a>
+        <a onclick="nav('issuer')" id="nav-issuer"><i class="fas fa-id-card me-2"></i> 发证 (Multi-Sig)</a>
+        <a onclick="nav('admin')" id="nav-admin"><i class="fas fa-cogs me-2"></i> 资产管理</a>
     </nav>
 
     <div class="main-content">
-        
-        <div class="top-bar">
-            <div><h4 id="page-title" class="m-0 fw-bold">资产交易市场</h4></div>
+        <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded shadow-sm">
+            <h4 id="page-title" class="m-0">资产市场</h4>
             <div class="d-flex align-items-center gap-3">
-                <div id="wallet-info-box" class="d-none align-items-center gap-2">
-                    <span class="badge bg-light text-dark border"><i class="fas fa-coins text-warning"></i> <span id="hkc-bal">-</span> HKC</span>
-                    <span class="badge bg-light text-dark border" id="id-status-badge">检查身份...</span>
-                </div>
-                <button onclick="connectWallet()" id="btn-conn" class="btn btn-primary btn-sm shadow-sm"><i class="fas fa-wallet"></i> 连接钱包</button>
-                <span id="addr-display" class="text-muted small fw-bold"></span>
+                <span id="wallet-addr" class="text-muted small">未连接</span>
+                <button onclick="connectWallet()" id="btn-conn" class="btn btn-primary btn-sm">连接钱包</button>
             </div>
         </div>
 
         <div id="view-market" class="view-section active">
-            <div class="row" id="market-grid">
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p class="text-muted mt-2">正在通过 RPC 节点读取链上资产...</p>
-                </div>
-            </div>
+            <div class="row" id="market-grid"></div>
         </div>
 
         <div id="view-profile" class="view-section">
-            <div id="profile-lock" class="text-center py-5">
-                <i class="fas fa-lock fa-3x text-muted mb-3"></i>
-                <h5>请连接钱包查看个人资产</h5>
-                <button class="btn btn-primary mt-2" onclick="connectWallet()">立即连接</button>
+            <div class="card-custom p-4 bg-primary text-white">
+                <h5>我的身份</h5>
+                <h2 id="my-role">Loading...</h2>
+                <span id="my-region">Region: -</span>
             </div>
+            <h5 class="mt-4">持有资产</h5>
+            <div class="row" id="my-inventory-grid"></div>
+        </div>
 
-            <div id="profile-content" class="d-none">
-                <div class="row">
-                    <div class="col-md-8">
-                        <div class="stat-card">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div>
-                                    <div class="stat-label">当前身份 (Identity)</div>
-                                    <div class="stat-num" style="font-size:1.8rem" id="my-role">Loading...</div>
-                                    <div id="my-region" class="badge bg-white text-primary mt-2">Region: -</div>
-                                    <div id="my-issuer" class="mt-2 small text-white-50">Issuer: -</div>
-                                </div>
-                                <i class="fas fa-id-card fa-4x text-white-50"></i>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                         <div class="stat-card" style="background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);">
-                            <div class="stat-label">持有资产数</div>
-                            <div class="stat-num" id="my-asset-count">0</div>
-                            <div class="mt-2 small text-white-50">已确权 RWA</div>
-                         </div>
+        <div id="view-issuer" class="view-section">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card-custom p-3 border-warning border-top border-4">
+                        <h5 class="text-warning"><i class="fas fa-file-signature"></i> 发起提案 (Maker)</h5>
+                        <p class="text-muted small">第一步：发起发证请求，进入待办列表。</p>
+                        <input id="targetUser" class="form-control mb-2" placeholder="用户地址 (0x...)">
+                        <select id="targetRegion" class="form-select mb-2"><option value="HK">HK</option><option value="US">US</option></select>
+                        <select id="targetRole" class="form-select mb-2"><option value="Student">Student</option><option value="Investor">Investor</option></select>
+                        <button onclick="proposeID()" class="btn btn-warning w-100 text-white fw-bold">发起提案 (Propose)</button>
                     </div>
                 </div>
-
-                <h5 class="mb-3 mt-4 fw-bold"><i class="fas fa-box-open text-primary"></i> 我的资产库 (Inventory)</h5>
-                <div class="card-custom">
-                    <div class="table-responsive">
-                        <table class="table table-custom mb-0">
-                            <thead><tr><th>购买时间</th><th>资产名称</th><th>成交价格</th><th>交易哈希</th></tr></thead>
-                            <tbody id="my-inventory-table">
-                                <tr><td colspan="4" class="text-center text-muted py-4">暂无购买记录</td></tr>
+                <div class="col-md-8">
+                    <div class="card-custom p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5>📋 待审批列表 (Pending Approvals)</h5>
+                            <button onclick="loadProposals()" class="btn btn-sm btn-outline-secondary"><i class="fas fa-sync"></i></button>
+                        </div>
+                        <table class="table table-hover">
+                            <thead><tr><th>ID</th><th>目标用户</th><th>角色</th><th>发起人</th><th>操作 (Checker)</th></tr></thead>
+                            <tbody id="proposal-table">
+                                <tr><td colspan="5" class="text-center text-muted">暂无待办事项</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -136,437 +83,136 @@
             </div>
         </div>
 
-        <div id="view-admin-assets" class="view-section">
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="card-custom p-3">
-                        <h5 class="mb-3">上架新资产</h5>
-                        <input type="text" class="form-control mb-2" id="newAssetName" placeholder="资产名称">
-                        <input type="number" class="form-control mb-2" id="newAssetPrice" placeholder="价格 (HKC)">
-                        <select class="form-select mb-2" id="newAssetRegion">
-                            <option value="">🌐 全球 (Global)</option>
-                            <option value="HK">🇭🇰 香港 (HK Only)</option>
-                            <option value="US">🇺🇸 美国 (US Only)</option>
-                        </select>
-                        <button class="btn btn-success w-100" onclick="addAsset()">上架</button>
-                    </div>
-                </div>
-                <div class="col-md-8">
-                    <div class="card-custom">
-                        <div class="table-responsive">
-                            <table class="table table-custom mb-0">
-                                <thead><tr><th>ID</th><th>名称</th><th>价格</th><th>状态</th><th>操作</th></tr></thead>
-                                <tbody id="admin-asset-table"></tbody>
-                            </table>
-                        </div>
-                    </div>
+        <div id="view-admin" class="view-section">
+            <div class="card-custom p-3">
+                <h5>上架资产</h5>
+                <div class="d-flex gap-2">
+                    <input id="newAssetName" class="form-control" placeholder="名称">
+                    <input id="newAssetPrice" class="form-control" placeholder="价格">
+                    <button onclick="addAsset()" class="btn btn-success">上架</button>
                 </div>
             </div>
         </div>
-
-        <div id="view-admin-users" class="view-section">
-            
-            <div class="card-custom p-3 bg-light border">
-                <div class="row g-2 align-items-end">
-                    <div class="col-md-4">
-                        <label class="small fw-bold text-muted">用户地址</label>
-                        <input type="text" class="form-control form-control-sm" id="targetUser" placeholder="0x...">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="small fw-bold text-muted">地区</label>
-                        <select class="form-select form-select-sm" id="targetRegion"><option value="HK">HK</option><option value="CN">CN</option><option value="US">US</option></select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="small fw-bold text-muted">角色</label>
-                        <select class="form-select form-select-sm" id="targetRole"><option value="Student">Student</option><option value="Investor">Investor</option></select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="small fw-bold text-muted">发证机构</label>
-                        <select class="form-select form-select-sm" id="targetType"><option value="user">发给用户</option><option value="issuer">设为机构</option></select>
-                    </div>
-                    <div class="col-md-2">
-                        <button class="btn btn-warning btn-sm w-100 fw-bold text-white" onclick="issueAction()">执行颁发</button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row mt-4">
-                <div class="col-md-6">
-                    <div class="card-custom">
-                        <div class="card-header-custom">
-                            <span>🏛️ 机构名单 (Issuers)</span>
-                            <button class="btn btn-xs btn-outline-secondary" onclick="refreshAdminData()"><i class="fas fa-sync"></i></button>
-                        </div>
-                        <table class="table table-custom mb-0 table-sm" style="font-size:0.9rem">
-                            <thead><tr><th>名称</th><th>地址</th><th>状态</th><th>操作</th></tr></thead>
-                            <tbody id="issuer-list-tbody"></tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card-custom">
-                        <div class="card-header-custom">
-                            <span>👥 已发证用户 (All Users)</span>
-                            <small class="text-muted">基于链上日志</small>
-                        </div>
-                        <table class="table table-custom mb-0 table-sm" style="font-size:0.9rem">
-                            <thead><tr><th>地址</th><th>地区/角色</th><th>状态</th><th>操作</th></tr></thead>
-                            <tbody id="user-list-tbody"></tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="view-logs" class="view-section">
-            <ul class="nav nav-tabs mb-3" id="logTabs">
-                <li class="nav-item"><a class="nav-link active" onclick="switchLogTab('trade')">RWA 交易记录</a></li>
-                <li class="nav-item"><a class="nav-link" onclick="switchLogTab('identity')">身份/吊销记录</a></li>
-            </ul>
-
-            <div class="card-custom">
-                <div class="table-responsive">
-                    <table class="table table-striped mb-0" id="log-table">
-                        </table>
-                </div>
-            </div>
-        </div>
-
     </div>
 
     <script>
-        // =================================================================
-        // ⚠️ 请填入你的 V4/V5 合约地址
-        // =================================================================
+        // ================= V7 地址 =================
         const ADDR_HKC      = "0xB0B8c886C6e8469C43bB309452a7f3C911681453";
         const ADDR_ID       = "0xA69098Bc7077cB3011D8E6d670A858669Ac3a034";
         const ADDR_MARKET   = "0x1ae6c3DE25A0aDBF01a600E1F960321567020a12";
+        const RPC_URL     = "https://ethereum-sepolia.publicnode.com"; 
+        // ===========================================
 
-        // 🚀 修复点 1：使用更稳定的公共节点 (Cloudflare 或 PublicNode)
-        // 这些节点通常允许浏览器直接访问
-        const RPC_URLS = [
-            "https://ethereum-sepolia.publicnode.com",
-            "https://sepolia.drpc.org",
-            "https://rpc.sepolia.org"
-        ];
-        // =================================================================
+        const ABI_ID = ["function proposeIdentity(address,string,string,uint256) external", "function approveIdentity(uint256) external", "function proposalCount() view returns (uint256)", "function getProposal(uint256) view returns (tuple(uint256 id, address targetUser, string region, string role, uint256 validityDays, address proposer, bool executed))", "function identities(address) view returns (address issuedBy, string region, string role, uint256 expiry, bool isValid)"];
+        const ABI_MKT = ["function addAsset(string,uint256,string,address) external", "function buyAsset(uint256) external", "function sellAsset(uint256) external", "function userBalances(address,uint256) view returns (uint256)", "function assetCount() view returns (uint256)", "function assets(uint256) view returns (string name, uint256 price, string requiredRegion, address requiredIssuer, bool isActive)"];
+        const ABI_HKC = ["function approve(address,uint256) external", "function balanceOf(address) view returns (uint256)"];
 
-        const ABI_HKC = ["function approve(address,uint256) external", "function balanceOf(address) view returns (uint256)", "function allowance(address,address) view returns (uint256)"];
-        const ABI_MKT = ["function addAsset(string,uint256,string,address) external", "function buyAsset(uint256) external", "function setAssetStatus(uint256, bool) external", "function assetCount() view returns (uint256)", "function assets(uint256) view returns (string name, uint256 price, string requiredRegion, address requiredIssuer, bool isActive)", "event TradeExecuted(address indexed user, uint256 assetId, string assetName, uint256 price, uint256 timestamp)"];
-        const ABI_ID = ["function addIssuer(address,string) external", "function revokeIssuer(address) external", "function issueIdentity(address,string,string,uint256) external", "function identities(address) view returns (address issuedBy, string region, string role, uint256 expiry, bool isValid)", "function issuers(address) view returns (bool isActive, string name)", "function getAllIssuers() view returns (address[])", "function checkCompliance(address,string,address) view returns (bool, string)", "event IssuerAdded(address indexed issuer, string name)", "event IssuerRevoked(address indexed issuer)", "event IdentityIssued(address indexed user, address indexed issuer, string region)"];
+        let signer, myAddr, cID, cMKT, cHKC;
 
-        let provider, signer, myAddr;
-        let cID, cMKT, cHKC;
-
-        // 初始化：尝试连接 RPC 节点实现免钱包浏览
         window.onload = async () => {
-            console.log("正在尝试免钱包连接...");
-            // 尝试列表中的节点，直到有一个能用
-            for (let url of RPC_URLS) {
-                try {
-                    const tempProvider = new ethers.providers.JsonRpcProvider(url);
-                    // 简单的测试调用，看节点活不活着
-                    await tempProvider.getBlockNumber(); 
-                    console.log("RPC 连接成功:", url);
-                    
-                    // 初始化只读合约
-                    cID = new ethers.Contract(ADDR_ID, ABI_ID, tempProvider);
-                    cMKT = new ethers.Contract(ADDR_MARKET, ABI_MKT, tempProvider);
-                    cHKC = new ethers.Contract(ADDR_HKC, ABI_HKC, tempProvider);
-                    
-                    // 加载资产列表
-                    loadMarketAssets();
-                    return; // 成功就退出
-                } catch(e) {
-                    console.warn("RPC 节点失败，尝试下一个:", url);
-                }
-            }
-            console.error("所有 RPC 节点都无法连接，请提示用户连接钱包");
-            document.getElementById("market-grid").innerHTML = "<div class='text-center py-5 text-muted'>网络加载缓慢，请点击右上角 <b class='text-primary'>连接钱包</b> 以查看数据</div>";
+            const p = new ethers.providers.JsonRpcProvider(RPC_URL);
+            initContracts(p);
+            loadAssets();
         };
 
-        async function connectWallet() {
-            if(!window.ethereum) return Swal.fire("错误", "请安装 MetaMask", "error");
-            const web3Provider = new ethers.providers.Web3Provider(window.ethereum);
-            await web3Provider.send("eth_requestAccounts", []);
-            signer = web3Provider.getSigner();
-            myAddr = await signer.getAddress();
-
-            // 覆盖合约实例 (带 Signer)
-            cID = new ethers.Contract(ADDR_ID, ABI_ID, signer);
-            cMKT = new ethers.Contract(ADDR_MARKET, ABI_MKT, signer);
-            cHKC = new ethers.Contract(ADDR_HKC, ABI_HKC, signer);
-            
-            // UI 更新
-            document.getElementById("btn-conn").style.display = "none";
-            document.getElementById("wallet-info-box").classList.remove("d-none");
-            document.getElementById("wallet-info-box").classList.add("d-flex");
-            document.getElementById("addr-display").innerText = myAddr.slice(0,6) + "...";
-
-            // 加载用户数据
-            loadUserData();
-            loadMarketAssets(); // 用钱包节点再刷一次，确保准确
+        function initContracts(p) {
+            cID = new ethers.Contract(ADDR_ID, ABI_ID, p);
+            cMKT = new ethers.Contract(ADDR_MARKET, ABI_MKT, p);
+            cHKC = new ethers.Contract(ADDR_HKC, ABI_HKC, p);
         }
 
-        // ------------------ 核心逻辑修复 ------------------
+        async function connectWallet() {
+            if(!window.ethereum) return Swal.fire("Err","MetaMask needed","error");
+            const p = new ethers.providers.Web3Provider(window.ethereum);
+            await p.send("eth_requestAccounts", []);
+            signer = p.getSigner();
+            myAddr = await signer.getAddress();
+            
+            document.getElementById("btn-conn").style.display="none";
+            document.getElementById("wallet-addr").innerText = myAddr.slice(0,6)+"...";
+            initContracts(signer);
+            
+            loadAssets(); loadUserData();
+            if(document.getElementById('view-issuer').classList.contains('active')) loadProposals();
+        }
 
-        async function loadMarketAssets() {
-            const grid = document.getElementById("market-grid");
-            const table = document.getElementById("admin-asset-table");
-            if(!cMKT) return;
+        // 多签逻辑
+        async function proposeID() {
+            const u=document.getElementById("targetUser").value;
+            const r=document.getElementById("targetRegion").value;
+            const role=document.getElementById("targetRole").value;
+            tx(cID.proposeIdentity(u,r,role,365), "提案已提交，等待第二人审批");
+        }
 
+        async function approveID(id) {
+            // 前端校验：不能自己批自己
+            const p = await cID.getProposal(id);
+            if(p.proposer.toLowerCase() === myAddr.toLowerCase()) return Swal.fire("错误", "合规限制：不能审批自己发起的提案 (Segregation of Duties)", "error");
+            tx(cID.approveIdentity(id), "审批通过，身份已颁发");
+        }
+
+        async function loadProposals() {
+            const tbody = document.getElementById("proposal-table");
+            tbody.innerHTML = "<tr><td colspan='5' class='text-center'>Loading...</td></tr>";
             try {
-                const count = await cMKT.assetCount();
-                if(count.toNumber() === 0) {
-                    grid.innerHTML = "<div class='text-center py-5 text-muted'>暂无上架资产</div>";
-                    return;
-                }
-                
-                let marketHtml = "";
-                let adminHtml = "";
-
-                for(let i=1; i<=count; i++) {
-                    const a = await cMKT.assets(i);
-                    // Admin View
-                    adminHtml += `<tr><td>${i}</td><td>${a.name}</td><td>${a.price}</td>
-                        <td>${a.isActive?'<span class="text-success">上架</span>':'<span class="text-danger">下架</span>'}</td>
-                        <td><button class="btn btn-sm btn-outline-dark" onclick="toggleAsset(${i},${!a.isActive})">${a.isActive?'下架':'上架'}</button></td></tr>`;
-
-                    // Market View
-                    if(a.isActive) {
-                        const hue = (i * 137) % 360;
-                        marketHtml += `
-                        <div class="col-md-4 col-lg-3 mb-4">
-                            <div class="asset-card">
-                                <div class="asset-img" style="background: linear-gradient(45deg, hsl(${hue}, 70%, 60%), hsl(${hue+60}, 70%, 60%))">
-                                    ${a.name.substring(0,2).toUpperCase()}
-                                    <span class="asset-badge">${a.requiredRegion || 'GLOBAL'}</span>
-                                </div>
-                                <div class="p-3">
-                                    <h5 class="text-truncate fw-bold">${a.name}</h5>
-                                    <div class="d-flex justify-content-between align-items-center mt-3">
-                                        <span class="text-primary fw-bold fs-5">${a.price} HKC</span>
-                                        <button class="btn btn-primary btn-sm px-3" onclick="smartBuy(${i}, '${a.name}', ${a.price}, '${a.requiredRegion}', '${a.requiredIssuer}')">Buy</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>`;
+                const count = await cID.proposalCount();
+                let html = "";
+                // 倒序查最近 5 个提案
+                for(let i=count; i>Math.max(0, count-5); i--) {
+                    const p = await cID.getProposal(i);
+                    if(!p.executed) {
+                        html += `<tr>
+                            <td>#${p.id}</td>
+                            <td>${p.targetUser.slice(0,6)}...</td>
+                            <td><span class="badge bg-info">${p.role}</span></td>
+                            <td>${p.proposer.slice(0,6)}...</td>
+                            <td><button class="btn btn-sm btn-success" onclick="approveID(${p.id})">✅ 批准 (Approve)</button></td>
+                        </tr>`;
                     }
                 }
-                grid.innerHTML = marketHtml;
-                table.innerHTML = adminHtml;
-
+                tbody.innerHTML = html || "<tr><td colspan='5' class='text-center text-muted'>暂无待办</td></tr>";
             } catch(e) { console.error(e); }
         }
 
+        async function loadAssets() {
+            const grid = document.getElementById("market-grid"); grid.innerHTML = "";
+            const count = await cMKT.assetCount();
+            for(let i=1; i<=count; i++) {
+                const a = await cMKT.assets(i);
+                if(a.isActive) grid.innerHTML += `<div class="col-md-3 mb-3"><div class="card-custom p-3"><h5>${a.name}</h5><p class="text-primary fw-bold">${a.price} HKC</p><button class="btn btn-primary w-100" onclick="buy(${i})">Buy</button></div></div>`;
+            }
+        }
+
         async function loadUserData() {
-            // 1. 余额
-            const bal = await cHKC.balanceOf(myAddr);
-            document.getElementById("hkc-bal").innerText = ethers.utils.formatUnits(bal, 18).split('.')[0];
-
-            // 2. 身份
+            if(!myAddr) return;
             const id = await cID.identities(myAddr);
-            const badge = document.getElementById("id-status-badge");
-            const profileLock = document.getElementById("profile-lock");
-            const profileContent = document.getElementById("profile-content");
-
-            if(id.isValid && Date.now()/1000 < id.expiry) {
-                badge.className = "badge bg-success"; badge.innerHTML = `✔ ${id.region} ${id.role}`;
-                document.getElementById("my-role").innerText = id.role;
-                document.getElementById("my-region").innerText = "Region: " + id.region;
-                document.getElementById("my-issuer").innerText = "Issuer: " + id.issuedBy.slice(0,8)+"...";
-            } else {
-                badge.className = "badge bg-danger"; badge.innerHTML = `❌ 无效身份`;
-                document.getElementById("my-role").innerText = "No Identity";
-            }
-
-            profileLock.classList.add('d-none');
-            profileContent.classList.remove('d-none');
-
-            loadMyInventory();
-        }
-
-        // 🚀 暴力修复版：加载个人资产
-        async function loadMyInventory() {
-            const table = document.getElementById("my-inventory-table");
-            const countDisplay = document.getElementById("my-asset-count");
+            document.getElementById("my-role").innerText = id.isValid ? id.role : "无身份";
+            document.getElementById("my-region").innerText = id.isValid ? "Region: "+id.region : "";
             
-            if (!myAddr) return;
-
-            table.innerHTML = "<tr><td colspan='4' class='text-center'><div class='spinner-border spinner-border-sm text-primary'></div> 正在暴力检索链上数据...</td></tr>";
-
-            try {
-                // 1. 扩大搜索范围：查最近 100,000 个区块 (涵盖过去 3-4 天的交易)
-                // 使用负数表示“从最新区块倒推”
-                const fromBlock = -100000; 
-
-                console.log(`正在抓取最近 ${Math.abs(fromBlock)} 个区块的所有交易...`);
-
-                // 2. 关键修改：不再向节点发送过滤条件，而是查询“所有交易”
-                // 公共节点对 "filter(myAddr)" 的支持很差，但对 "filterAll" 支持很好
-                const filter = cMKT.filters.TradeExecuted(); 
-                const allLogs = await cMKT.queryFilter(filter, fromBlock, "latest");
-                
-                console.log(`全网共检索到 ${allLogs.length} 笔交易`);
-
-                // 3. 在本地 JS 里过滤属于我的交易 (Client-side Filtering)
-                // 注意：地址要转小写比较，防止大小写敏感问题
-                const myLogs = allLogs.filter(log => 
-                    log.args.user.toLowerCase() === myAddr.toLowerCase()
-                );
-
-                console.log(`其中属于我的有 ${myLogs.length} 笔`);
-                
-                // 更新数量显示
-                countDisplay.innerText = myLogs.length;
-                
-                if(myLogs.length === 0) {
-                    table.innerHTML = `
-                        <tr><td colspan='4' class='text-center text-muted py-4'>
-                            <p class="mb-1">最近 3 天内无交易。</p>
-                            <a href="https://sepolia.etherscan.io/address/${myAddr}#tokentxns" target="_blank" class="btn btn-sm btn-outline-primary mt-2">
-                                <i class="fas fa-external-link-alt"></i> 查看更早的历史 (Etherscan)
-                            </a>
-                        </td></tr>`;
-                    return;
+            // Inventory
+            const inv = document.getElementById("my-inventory-grid"); inv.innerHTML = "";
+            const count = await cMKT.assetCount();
+            for(let i=1; i<=count; i++) {
+                const bal = await cMKT.userBalances(myAddr, i);
+                if(bal.gt(0)) {
+                    const a = await cMKT.assets(i);
+                    inv.innerHTML += `<div class="col-md-3"><div class="card-custom p-3 border-primary"><h6>${a.name}</h6><span class="badge bg-secondary">x${bal}</span><button class="btn btn-sm btn-danger w-100 mt-2" onclick="sell(${i})">卖出</button></div></div>`;
                 }
-                
-                let html = "";
-                // 倒序显示 (最新的在上面)
-                for(let i=myLogs.length-1; i>=0; i--) {
-                    const log = myLogs[i];
-                    html += `
-                        <tr>
-                            <td><span class="badge bg-success">Confirmed ✅</span></td>
-                            <td class="fw-bold text-primary">${log.args.assetName}</td>
-                            <td>${log.args.price} HKC</td>
-                            <td><a href="https://sepolia.etherscan.io/tx/${log.transactionHash}" target="_blank" class="btn btn-xs btn-light border">View ↗</a></td>
-                        </tr>
-                    `;
-                }
-                table.innerHTML = html;
-
-            } catch(e) {
-                console.error("日志加载失败:", e);
-                table.innerHTML = `<tr><td colspan='4' class='text-center text-danger'>数据同步延迟，请直接点击 Etherscan 查看</td></tr>`;
             }
         }
 
-        // Admin: 刷新用户列表
-        async function refreshAdminData() {
-            if(!signer) return Swal.fire("请先连接钱包");
-            
-            // 加载机构
-            const issuerTbody = document.getElementById("issuer-list-tbody");
-            issuerTbody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
-            try {
-                const list = await cID.getAllIssuers();
-                let html = "";
-                for(let addr of list) {
-                    const info = await cID.issuers(addr);
-                    if(info.name) {
-                        html += `<tr><td>${info.name}</td><td class="small text-muted">${addr.slice(0,8)}...</td>
-                                <td>${info.isActive?'<span class="badge bg-success">Active</span>':'<span class="badge bg-danger">Revoked</span>'}</td>
-                                <td><button class="btn btn-xs btn-outline-danger" onclick="revokeIssuer('${addr}')">吊销</button></td></tr>`;
-                    }
-                }
-                issuerTbody.innerHTML = html;
-            } catch(e){ issuerTbody.innerHTML = ""; }
-
-            // 加载用户 (最近 5万区块)
-            const userTbody = document.getElementById("user-list-tbody");
-            userTbody.innerHTML = "<tr><td colspan='4' class='text-center'>正在索引...</td></tr>";
-            
-            try {
-                const currentBlock = await cID.provider.getBlockNumber();
-                const fromBlock = Math.max(0, currentBlock - 50000); 
-                const logs = await cID.queryFilter("IdentityIssued", fromBlock, "latest");
-                
-                const userMap = new Map();
-                for(let log of logs) {
-                    userMap.set(log.args.user, { region: log.args.region });
-                }
-
-                let uHtml = "";
-                for(let [addr, data] of userMap) {
-                    const info = await cID.identities(addr);
-                    const isExpired = Date.now()/1000 > info.expiry;
-                    uHtml += `<tr><td class="small">${addr.slice(0,8)}...</td><td class="small">${data.region} / ${info.role}</td>
-                        <td>${(info.isValid && !isExpired)?'<span class="badge bg-success">有效</span>':'<span class="badge bg-secondary">无效</span>'}</td>
-                        <td><button class="btn btn-xs btn-outline-danger" onclick="revokeUser('${addr}')">吊销</button></td></tr>`;
-                }
-                userTbody.innerHTML = uHtml || "<tr><td colspan='4' class='text-center'>暂无发证记录</td></tr>";
-            } catch(e) { userTbody.innerHTML = "<tr><td colspan='4' class='text-danger'>索引超时</td></tr>"; }
+        async function tx(p, msg) {
+            try { Swal.fire({title:'确认交易', didOpen:()=>Swal.showLoading()}); await (await p).wait(); Swal.fire("成功", msg, "success"); loadProposals(); loadAssets(); loadUserData(); } 
+            catch(e) { Swal.fire("Error", e.reason||e.message, "error"); }
         }
 
-        // 全局日志
-        async function loadGlobalLogs() {
-            const table = document.getElementById("log-trade-table");
-            table.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
-            // 简单加载最近 20 条 TradeExecuted，不限制区块（默认 RPC 可能只给最近的）
-            // 如果还是报错，可以加上区块限制
-            const logs = await cMKT.queryFilter("TradeExecuted"); 
-            let html = "";
-            for(let i=logs.length-1; i>=Math.max(0, logs.length-20); i--) {
-                const l = logs[i];
-                html += `<tr><td>${l.args.user.slice(0,6)}...</td><td>${l.args.assetName}</td><td>${l.args.price}</td><td><a href="https://sepolia.etherscan.io/tx/${l.transactionHash}" target="_blank">View</a></td></tr>`;
-            }
-            table.innerHTML = html;
-        }
+        function buy(id) { tx(cMKT.buyAsset(id), "购买成功"); }
+        function sell(id) { tx(cMKT.sellAsset(id), "卖出成功"); }
+        function addAsset() { tx(cMKT.addAsset(document.getElementById("newAssetName").value, document.getElementById("newAssetPrice").value, "", "0x0000000000000000000000000000000000000000"), "上架成功"); }
 
-        // 交互 Action
-        async function smartBuy(id, name, price, reqRegion, reqIssuer) {
-            Swal.fire({ title: '执行合规检查...', html: '正在验证链上身份规则...', didOpen:()=>Swal.showLoading() });
-            try {
-                // Pre-flight check
-                const compliant = await cID.checkCompliance(myAddr, reqRegion, reqIssuer);
-                if(!compliant[0]) throw new Error("合规验证失败: " + compliant[1]);
-                
-                const bal = await cHKC.balanceOf(myAddr);
-                const priceWei = ethers.utils.parseUnits(price.toString(), 18);
-                if(bal.lt(priceWei)) throw new Error("余额不足");
-
-                const allowance = await cHKC.allowance(myAddr, ADDR_MARKET);
-                if(allowance.lt(priceWei)) throw new Error("请先点击右上角授权 HKC");
-
-                const tx = await cMKT.buyAsset(id);
-                Swal.fire({ title: '上链中...', html: '交易广播成功，等待确认...', didOpen:()=>Swal.showLoading() });
-                await tx.wait();
-                
-                Swal.fire("成功", "资产购买完成", "success");
-                loadUserData(); // 刷新
-            } catch(e) { Swal.fire("失败", e.reason||e.message, "error"); }
-        }
-
-        async function tx(p) {
-            try { Swal.fire({title:'确认...',didOpen:()=>Swal.showLoading()}); const t=await p; await t.wait(); Swal.fire("成功","完成","success"); loadMarketAssets(); if(signer) loadUserData(); } catch(e){ Swal.fire("错误",e.reason||e.message,"error"); }
-        }
-
-        function approveHKC() { tx(cHKC.approve(ADDR_MARKET, ethers.constants.MaxUint256)); }
-        function addAsset() { tx(cMKT.addAsset(document.getElementById("newAssetName").value, document.getElementById("newAssetPrice").value, document.getElementById("newAssetRegion").value, "0x0000000000000000000000000000000000000000")); }
-        function toggleAsset(id,s) { tx(cMKT.setAssetStatus(id,s)); }
-        function govAdd() { tx(cID.addIssuer(document.getElementById("issuerAddr").value, document.getElementById("issuerName").value)); }
-        function govRevoke() { tx(cID.revokeIssuer(document.getElementById("issuerAddr").value)); }
-        function revokeIssuer(a) { tx(cID.revokeIssuer(a)); }
-        function revokeUser(a) { tx(cID.issueIdentity(a, "REVOKED", "Banned", 0)); }
-        function issueAction() { 
-            const u=document.getElementById("targetUser").value, r=document.getElementById("targetRegion").value, role=document.getElementById("targetRole").value, type=document.getElementById("targetType").value;
-            if(type==='user') tx(cID.issueIdentity(u,r,role,365)); else tx(cID.addIssuer(u,role+" Org"));
-        }
-
-        // 导航
-        function nav(page) {
-            document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active'));
-            document.getElementById('view-'+page).classList.add('active');
-            document.querySelectorAll('.sidebar a').forEach(e => e.classList.remove('active'));
-            document.getElementById('nav-'+page).classList.add('active');
-            
-            const map={'market':'资产市场','profile':'个人中心','admin-assets':'资产管理','admin-users':'用户与机构','logs':'审计日志'};
-            document.getElementById('page-title').innerText=map[page];
-
-            if(page==='admin-users') refreshAdminData();
-            if(page==='logs') loadGlobalLogs();
-            if(page==='profile' && signer) loadMyInventory();
+        function nav(p) {
+            document.querySelectorAll('.view-section').forEach(e=>e.classList.remove('active')); document.getElementById('view-'+p).classList.add('active');
+            if(p==='issuer') loadProposals();
         }
     </script>
 </body>
