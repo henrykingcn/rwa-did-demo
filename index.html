@@ -236,50 +236,66 @@
 
     <script>
         // =================================================================
-        // ⚠️ 配置区：请填入你的 V4/V5 合约地址 (不用重新部署，地址通用的)
+        // ⚠️ 请填入你的 V4/V5 合约地址
         // =================================================================
         const ADDR_HKC      = "0xB0B8c886C6e8469C43bB309452a7f3C911681453";
         const ADDR_ID       = "0xA69098Bc7077cB3011D8E6d670A858669Ac3a034";
         const ADDR_MARKET   = "0x1ae6c3DE25A0aDBF01a600E1F960321567020a12";
-        // 📢 这里填一个 Sepolia 的公共节点，实现免钱包浏览
-        const RPC_URL       = "https://rpc.sepolia.org"; // 或者 https://1rpc.io/sepolia
+
+        // 🚀 修复点 1：使用更稳定的公共节点 (Cloudflare 或 PublicNode)
+        // 这些节点通常允许浏览器直接访问
+        const RPC_URLS = [
+            "https://ethereum-sepolia.publicnode.com",
+            "https://sepolia.drpc.org",
+            "https://rpc.sepolia.org"
+        ];
         // =================================================================
 
-        // ABI 定义
+        const ABI_HKC = ["function approve(address,uint256) external", "function balanceOf(address) view returns (uint256)", "function allowance(address,address) view returns (uint256)"];
         const ABI_MKT = ["function addAsset(string,uint256,string,address) external", "function buyAsset(uint256) external", "function setAssetStatus(uint256, bool) external", "function assetCount() view returns (uint256)", "function assets(uint256) view returns (string name, uint256 price, string requiredRegion, address requiredIssuer, bool isActive)", "event TradeExecuted(address indexed user, uint256 assetId, string assetName, uint256 price, uint256 timestamp)"];
-        const ABI_ID = ["function addIssuer(address,string) external", "function revokeIssuer(address) external", "function issueIdentity(address,string,string,uint256) external", "function identities(address) view returns (address issuedBy, string region, string role, uint256 expiry, bool isValid)", "function issuers(address) view returns (bool isActive, string name)", "function getAllIssuers() view returns (address[])", "event IssuerAdded(address indexed issuer, string name)", "event IssuerRevoked(address indexed issuer)", "event IdentityIssued(address indexed user, address indexed issuer, string region)"];
-        const ABI_HKC = ["function approve(address,uint256) external", "function balanceOf(address) view returns (uint256)"];
+        const ABI_ID = ["function addIssuer(address,string) external", "function revokeIssuer(address) external", "function issueIdentity(address,string,string,uint256) external", "function identities(address) view returns (address issuedBy, string region, string role, uint256 expiry, bool isValid)", "function issuers(address) view returns (bool isActive, string name)", "function getAllIssuers() view returns (address[])", "function checkCompliance(address,string,address) view returns (bool, string)", "event IssuerAdded(address indexed issuer, string name)", "event IssuerRevoked(address indexed issuer)", "event IdentityIssued(address indexed user, address indexed issuer, string region)"];
 
         let provider, signer, myAddr;
-        let cID, cMKT, cHKC; // 合约实例 (可能是只读，也可能是可写)
+        let cID, cMKT, cHKC;
 
-        // 初始化：默认使用 RPC 只读连接
+        // 初始化：尝试连接 RPC 节点实现免钱包浏览
         window.onload = async () => {
-            // 1. 先尝试建立只读连接
-            try {
-                const readProvider = new ethers.providers.JsonRpcProvider(RPC_URL);
-                initContracts(readProvider);
-                console.log("Read-only provider connected");
-                loadMarketAssets(); // 加载市场 (不需要钱包)
-            } catch(e) { console.error("RPC Connection failed", e); }
+            console.log("正在尝试免钱包连接...");
+            // 尝试列表中的节点，直到有一个能用
+            for (let url of RPC_URLS) {
+                try {
+                    const tempProvider = new ethers.providers.JsonRpcProvider(url);
+                    // 简单的测试调用，看节点活不活着
+                    await tempProvider.getBlockNumber(); 
+                    console.log("RPC 连接成功:", url);
+                    
+                    // 初始化只读合约
+                    cID = new ethers.Contract(ADDR_ID, ABI_ID, tempProvider);
+                    cMKT = new ethers.Contract(ADDR_MARKET, ABI_MKT, tempProvider);
+                    cHKC = new ethers.Contract(ADDR_HKC, ABI_HKC, tempProvider);
+                    
+                    // 加载资产列表
+                    loadMarketAssets();
+                    return; // 成功就退出
+                } catch(e) {
+                    console.warn("RPC 节点失败，尝试下一个:", url);
+                }
+            }
+            console.error("所有 RPC 节点都无法连接，请提示用户连接钱包");
+            document.getElementById("market-grid").innerHTML = "<div class='text-center py-5 text-muted'>网络加载缓慢，请点击右上角 <b class='text-primary'>连接钱包</b> 以查看数据</div>";
         };
 
-        function initContracts(p) {
-            cID = new ethers.Contract(ADDR_ID, ABI_ID, p);
-            cMKT = new ethers.Contract(ADDR_MARKET, ABI_MKT, p);
-            cHKC = new ethers.Contract(ADDR_HKC, ABI_HKC, p);
-        }
-
-        // 连接钱包 (升级为 Signer)
         async function connectWallet() {
-            if(!window.ethereum) return Swal.fire("Error", "No MetaMask found", "error");
+            if(!window.ethereum) return Swal.fire("错误", "请安装 MetaMask", "error");
             const web3Provider = new ethers.providers.Web3Provider(window.ethereum);
             await web3Provider.send("eth_requestAccounts", []);
             signer = web3Provider.getSigner();
             myAddr = await signer.getAddress();
 
-            // 重新初始化合约 (带 Signer，可写)
-            initContracts(signer);
+            // 覆盖合约实例 (带 Signer)
+            cID = new ethers.Contract(ADDR_ID, ABI_ID, signer);
+            cMKT = new ethers.Contract(ADDR_MARKET, ABI_MKT, signer);
+            cHKC = new ethers.Contract(ADDR_HKC, ABI_HKC, signer);
             
             // UI 更新
             document.getElementById("btn-conn").style.display = "none";
@@ -287,17 +303,17 @@
             document.getElementById("wallet-info-box").classList.add("d-flex");
             document.getElementById("addr-display").innerText = myAddr.slice(0,6) + "...";
 
-            // 加载个人数据
+            // 加载用户数据
             loadUserData();
-            refreshUI();
+            loadMarketAssets(); // 用钱包节点再刷一次，确保准确
         }
 
-        // ------------------ 数据加载逻辑 ------------------
+        // ------------------ 核心逻辑修复 ------------------
 
         async function loadMarketAssets() {
             const grid = document.getElementById("market-grid");
             const table = document.getElementById("admin-asset-table");
-            grid.innerHTML = ""; table.innerHTML = "";
+            if(!cMKT) return;
 
             try {
                 const count = await cMKT.assetCount();
@@ -305,14 +321,21 @@
                     grid.innerHTML = "<div class='text-center py-5 text-muted'>暂无上架资产</div>";
                     return;
                 }
+                
+                let marketHtml = "";
+                let adminHtml = "";
 
                 for(let i=1; i<=count; i++) {
                     const a = await cMKT.assets(i);
-                    
-                    // Market View (只显示 Active)
+                    // Admin View
+                    adminHtml += `<tr><td>${i}</td><td>${a.name}</td><td>${a.price}</td>
+                        <td>${a.isActive?'<span class="text-success">上架</span>':'<span class="text-danger">下架</span>'}</td>
+                        <td><button class="btn btn-sm btn-outline-dark" onclick="toggleAsset(${i},${!a.isActive})">${a.isActive?'下架':'上架'}</button></td></tr>`;
+
+                    // Market View
                     if(a.isActive) {
                         const hue = (i * 137) % 360;
-                        grid.innerHTML += `
+                        marketHtml += `
                         <div class="col-md-4 col-lg-3 mb-4">
                             <div class="asset-card">
                                 <div class="asset-img" style="background: linear-gradient(45deg, hsl(${hue}, 70%, 60%), hsl(${hue+60}, 70%, 60%))">
@@ -323,19 +346,17 @@
                                     <h5 class="text-truncate fw-bold">${a.name}</h5>
                                     <div class="d-flex justify-content-between align-items-center mt-3">
                                         <span class="text-primary fw-bold fs-5">${a.price} HKC</span>
-                                        <button class="btn btn-primary btn-sm px-3" onclick="buyAsset(${i})">Buy</button>
+                                        <button class="btn btn-primary btn-sm px-3" onclick="smartBuy(${i}, '${a.name}', ${a.price}, '${a.requiredRegion}', '${a.requiredIssuer}')">Buy</button>
                                     </div>
                                 </div>
                             </div>
                         </div>`;
                     }
-
-                    // Admin View (显示全部)
-                    table.innerHTML += `<tr><td>${i}</td><td>${a.name}</td><td>${a.price}</td>
-                        <td>${a.isActive?'<span class="text-success">上架</span>':'<span class="text-danger">下架</span>'}</td>
-                        <td><button class="btn btn-sm btn-outline-dark" onclick="toggleAsset(${i},${!a.isActive})">${a.isActive?'下架':'上架'}</button></td></tr>`;
                 }
-            } catch(e) { console.error(e); grid.innerHTML = "<div class='text-center py-5 text-danger'>RPC连接慢，请尝试连接钱包加载</div>"; }
+                grid.innerHTML = marketHtml;
+                table.innerHTML = adminHtml;
+
+            } catch(e) { console.error(e); }
         }
 
         async function loadUserData() {
@@ -343,7 +364,7 @@
             const bal = await cHKC.balanceOf(myAddr);
             document.getElementById("hkc-bal").innerText = ethers.utils.formatUnits(bal, 18).split('.')[0];
 
-            // 2. 身份状态
+            // 2. 身份
             const id = await cID.identities(myAddr);
             const badge = document.getElementById("id-status-badge");
             const profileLock = document.getElementById("profile-lock");
@@ -353,200 +374,182 @@
                 badge.className = "badge bg-success"; badge.innerHTML = `✔ ${id.region} ${id.role}`;
                 document.getElementById("my-role").innerText = id.role;
                 document.getElementById("my-region").innerText = "Region: " + id.region;
-                document.getElementById("my-issuer").innerText = "Issuer: " + id.issuedBy.slice(0,10)+"...";
+                document.getElementById("my-issuer").innerText = "Issuer: " + id.issuedBy.slice(0,8)+"...";
             } else {
                 badge.className = "badge bg-danger"; badge.innerHTML = `❌ 无效身份`;
                 document.getElementById("my-role").innerText = "No Identity";
             }
 
-            // 解锁个人中心
             profileLock.classList.add('d-none');
             profileContent.classList.remove('d-none');
 
-            // 3. 加载我的 Inventory (通过 Logs)
             loadMyInventory();
         }
 
+        // 🚀 修复点 2：交易记录不显示
         async function loadMyInventory() {
-            // 过滤：我发起的 TradeExecuted
-            const filter = cMKT.filters.TradeExecuted(myAddr, null);
-            const logs = await cMKT.queryFilter(filter); // 从创世区块查起
-            
             const table = document.getElementById("my-inventory-table");
-            document.getElementById("my-asset-count").innerText = logs.length;
-            
-            if(logs.length > 0) table.innerHTML = "";
-            
-            // 倒序显示
-            for(let i=logs.length-1; i>=0; i--) {
-                const log = logs[i];
-                const date = new Date(log.args.timestamp * 1000).toLocaleString();
-                table.innerHTML += `
-                    <tr>
-                        <td>${date}</td>
-                        <td class="fw-bold">${log.args.assetName}</td>
-                        <td>${log.args.price} HKC</td>
-                        <td><a href="https://sepolia.etherscan.io/tx/${log.transactionHash}" target="_blank" class="text-decoration-none">View ↗</a></td>
-                    </tr>
-                `;
+            table.innerHTML = "<tr><td colspan='4' class='text-center'>正在从区块链同步...</td></tr>";
+
+            try {
+                // 1. 获取当前区块号
+                const currentBlock = await cMKT.provider.getBlockNumber();
+                // 2. 只扫描最近 50,000 个区块 (防止公共节点超时)
+                const fromBlock = Math.max(0, currentBlock - 50000); 
+
+                const filter = cMKT.filters.TradeExecuted(myAddr, null);
+                const logs = await cMKT.queryFilter(filter, fromBlock, "latest"); 
+                
+                document.getElementById("my-asset-count").innerText = logs.length;
+                
+                if(logs.length === 0) {
+                    table.innerHTML = "<tr><td colspan='4' class='text-center text-muted py-4'>近期无购买记录 (仅显示最近 5万 区块)</td></tr>";
+                    return;
+                }
+                
+                let html = "";
+                // 倒序显示
+                for(let i=logs.length-1; i>=0; i--) {
+                    const log = logs[i];
+                    // 处理时间戳 (如果是 RPC 节点可能没有 timestamp，需要 getBlock)
+                    let dateStr = "Recently";
+                    try {
+                        const block = await log.getBlock();
+                        dateStr = new Date(block.timestamp * 1000).toLocaleString();
+                    } catch(e) {}
+
+                    html += `
+                        <tr>
+                            <td>${dateStr}</td>
+                            <td class="fw-bold">${log.args.assetName}</td>
+                            <td>${log.args.price} HKC</td>
+                            <td><a href="https://sepolia.etherscan.io/tx/${log.transactionHash}" target="_blank" class="text-decoration-none">View ↗</a></td>
+                        </tr>
+                    `;
+                }
+                table.innerHTML = html;
+            } catch(e) {
+                console.error("加载日志失败:", e);
+                table.innerHTML = "<tr><td colspan='4' class='text-center text-danger'>日志同步超时，请刷新重试</td></tr>";
             }
         }
 
-        // 🔥 Admin 数据加载 (V6 核心：事件索引重建用户表)
+        // Admin: 刷新用户列表
         async function refreshAdminData() {
-            if(!signer) return;
+            if(!signer) return Swal.fire("请先连接钱包");
             
-            // 1. 加载机构 (从合约数组)
+            // 加载机构
             const issuerTbody = document.getElementById("issuer-list-tbody");
-            issuerTbody.innerHTML = "";
+            issuerTbody.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
             try {
                 const list = await cID.getAllIssuers();
+                let html = "";
                 for(let addr of list) {
                     const info = await cID.issuers(addr);
                     if(info.name) {
-                        issuerTbody.innerHTML += `
-                            <tr>
-                                <td>${info.name}</td>
-                                <td class="small text-muted">${addr.slice(0,8)}...</td>
+                        html += `<tr><td>${info.name}</td><td class="small text-muted">${addr.slice(0,8)}...</td>
                                 <td>${info.isActive?'<span class="badge bg-success">Active</span>':'<span class="badge bg-danger">Revoked</span>'}</td>
-                                <td><button class="btn btn-xs btn-outline-danger" onclick="revokeIssuer('${addr}')">吊销</button></td>
-                            </tr>`;
+                                <td><button class="btn btn-xs btn-outline-danger" onclick="revokeIssuer('${addr}')">吊销</button></td></tr>`;
                     }
                 }
-            } catch(e){}
+                issuerTbody.innerHTML = html;
+            } catch(e){ issuerTbody.innerHTML = ""; }
 
-            // 2. 加载用户 (从日志重建)
+            // 加载用户 (最近 5万区块)
             const userTbody = document.getElementById("user-list-tbody");
-            userTbody.innerHTML = "<tr><td colspan='4' class='text-center'>正在从区块链索引数据...</td></tr>";
+            userTbody.innerHTML = "<tr><td colspan='4' class='text-center'>正在索引...</td></tr>";
             
-            // 抓取所有 'IdentityIssued' 事件
-            const logs = await cID.queryFilter("IdentityIssued");
-            const userMap = new Map(); // 去重
+            try {
+                const currentBlock = await cID.provider.getBlockNumber();
+                const fromBlock = Math.max(0, currentBlock - 50000); 
+                const logs = await cID.queryFilter("IdentityIssued", fromBlock, "latest");
+                
+                const userMap = new Map();
+                for(let log of logs) {
+                    userMap.set(log.args.user, { region: log.args.region });
+                }
 
-            // 只保留每个用户最新的记录
-            for(let log of logs) {
-                userMap.set(log.args.user, { 
-                    region: log.args.region,
-                    block: log.blockNumber
-                });
-            }
-
-            userTbody.innerHTML = "";
-            for(let [addr, data] of userMap) {
-                // 检查当前是否还有效
-                const info = await cID.identities(addr);
-                const isExpired = Date.now()/1000 > info.expiry;
-                const statusHtml = (info.isValid && !isExpired) 
-                    ? '<span class="badge bg-success">有效</span>' 
-                    : '<span class="badge bg-secondary">已过期/吊销</span>';
-
-                userTbody.innerHTML += `
-                    <tr>
-                        <td class="small">${addr.slice(0,10)}...</td>
-                        <td class="small">${data.region} / ${info.role}</td>
-                        <td>${statusHtml}</td>
-                        <td>
-                            ${(info.isValid && !isExpired) ? `<button class="btn btn-xs btn-outline-danger" onclick="revokeUser('${addr}')">吊销</button>` : '-'}
-                        </td>
-                    </tr>
-                `;
-            }
+                let uHtml = "";
+                for(let [addr, data] of userMap) {
+                    const info = await cID.identities(addr);
+                    const isExpired = Date.now()/1000 > info.expiry;
+                    uHtml += `<tr><td class="small">${addr.slice(0,8)}...</td><td class="small">${data.region} / ${info.role}</td>
+                        <td>${(info.isValid && !isExpired)?'<span class="badge bg-success">有效</span>':'<span class="badge bg-secondary">无效</span>'}</td>
+                        <td><button class="btn btn-xs btn-outline-danger" onclick="revokeUser('${addr}')">吊销</button></td></tr>`;
+                }
+                userTbody.innerHTML = uHtml || "<tr><td colspan='4' class='text-center'>暂无发证记录</td></tr>";
+            } catch(e) { userTbody.innerHTML = "<tr><td colspan='4' class='text-danger'>索引超时</td></tr>"; }
         }
 
         // 全局日志
         async function loadGlobalLogs() {
-            const table = document.getElementById("log-table");
-            table.innerHTML = "<tr><td colspan='5' class='text-center'>加载中...</td></tr>";
-            
-            // 混合两种日志：交易 + 身份
-            const logs1 = await cMKT.queryFilter("TradeExecuted");
-            const logs2 = await cID.queryFilter("IdentityIssued");
-            const logs3 = await cID.queryFilter("IssuerRevoked");
-            
-            // 简单合并展示
-            let all = [];
-            logs1.forEach(l => all.push({type:'TRADE', ...l}));
-            logs2.forEach(l => all.push({type:'ISSUE', ...l}));
-            logs3.forEach(l => all.push({type:'REVOKE', ...l}));
-            
-            // 按区块排序
-            all.sort((a,b) => b.blockNumber - a.blockNumber);
-
-            table.innerHTML = "<thead><tr><th>类型</th><th>详情</th><th>Hash</th></tr></thead><tbody>";
-            all.slice(0, 50).forEach(l => { // 只显示最近50条
-                let badge = "", content = "";
-                if(l.type === 'TRADE') { badge="<span class='badge bg-primary'>Trade</span>"; content = `用户 ${l.args.user.slice(0,6)} 购买了 ${l.args.assetName}`; }
-                if(l.type === 'ISSUE') { badge="<span class='badge bg-success'>Issue</span>"; content = `发证给 ${l.args.user.slice(0,6)} (${l.args.region})`; }
-                if(l.type === 'REVOKE') { badge="<span class='badge bg-danger'>Revoke</span>"; content = `吊销机构 ${l.args.issuer.slice(0,6)}`; }
-                
-                table.innerHTML += `<tr><td>${badge}</td><td>${content}</td><td><a href="https://sepolia.etherscan.io/tx/${l.transactionHash}" target="_blank">View</a></td></tr></tbody>`;
-            });
+            const table = document.getElementById("log-trade-table");
+            table.innerHTML = "<tr><td colspan='4'>Loading...</td></tr>";
+            // 简单加载最近 20 条 TradeExecuted，不限制区块（默认 RPC 可能只给最近的）
+            // 如果还是报错，可以加上区块限制
+            const logs = await cMKT.queryFilter("TradeExecuted"); 
+            let html = "";
+            for(let i=logs.length-1; i>=Math.max(0, logs.length-20); i--) {
+                const l = logs[i];
+                html += `<tr><td>${l.args.user.slice(0,6)}...</td><td>${l.args.assetName}</td><td>${l.args.price}</td><td><a href="https://sepolia.etherscan.io/tx/${l.transactionHash}" target="_blank">View</a></td></tr>`;
+            }
+            table.innerHTML = html;
         }
 
-
-        // ------------------ 交互操作 ------------------
-        
-        async function tx(promise) {
-            if(!signer) return Swal.fire("请连接钱包");
+        // 交互 Action
+        async function smartBuy(id, name, price, reqRegion, reqIssuer) {
+            Swal.fire({ title: '执行合规检查...', html: '正在验证链上身份规则...', didOpen:()=>Swal.showLoading() });
             try {
-                Swal.fire({title:'等待确认...', didOpen:()=>Swal.showLoading()});
-                const t = await promise;
-                Swal.fire({title:'上链中...', didOpen:()=>Swal.showLoading()});
-                await t.wait();
-                Swal.fire("成功", "操作完成", "success");
-                refreshUI(); // 操作完自动刷新所有数据
-            } catch(e) { Swal.fire("Error", e.reason||e.message, "error"); }
+                // Pre-flight check
+                const compliant = await cID.checkCompliance(myAddr, reqRegion, reqIssuer);
+                if(!compliant[0]) throw new Error("合规验证失败: " + compliant[1]);
+                
+                const bal = await cHKC.balanceOf(myAddr);
+                const priceWei = ethers.utils.parseUnits(price.toString(), 18);
+                if(bal.lt(priceWei)) throw new Error("余额不足");
+
+                const allowance = await cHKC.allowance(myAddr, ADDR_MARKET);
+                if(allowance.lt(priceWei)) throw new Error("请先点击右上角授权 HKC");
+
+                const tx = await cMKT.buyAsset(id);
+                Swal.fire({ title: '上链中...', html: '交易广播成功，等待确认...', didOpen:()=>Swal.showLoading() });
+                await tx.wait();
+                
+                Swal.fire("成功", "资产购买完成", "success");
+                loadUserData(); // 刷新
+            } catch(e) { Swal.fire("失败", e.reason||e.message, "error"); }
         }
 
-        function buyAsset(id) { tx(cMKT.buyAsset(id)); }
+        async function tx(p) {
+            try { Swal.fire({title:'确认...',didOpen:()=>Swal.showLoading()}); const t=await p; await t.wait(); Swal.fire("成功","完成","success"); loadMarketAssets(); if(signer) loadUserData(); } catch(e){ Swal.fire("错误",e.reason||e.message,"error"); }
+        }
+
         function approveHKC() { tx(cHKC.approve(ADDR_MARKET, ethers.constants.MaxUint256)); }
         function addAsset() { tx(cMKT.addAsset(document.getElementById("newAssetName").value, document.getElementById("newAssetPrice").value, document.getElementById("newAssetRegion").value, "0x0000000000000000000000000000000000000000")); }
-        function toggleAsset(id, s) { tx(cMKT.setAssetStatus(id, s)); }
-        
-        // 颁发身份 (或添加机构)
-        function issueAction() {
-            const u = document.getElementById("targetUser").value;
-            const r = document.getElementById("targetRegion").value;
-            const role = document.getElementById("targetRole").value;
-            const type = document.getElementById("targetType").value;
-            
-            if(type === 'user') tx(cID.issueIdentity(u, r, role, 365)); // 发给用户，有效期1年
-            else tx(cID.addIssuer(u, role + " Org")); // 添加为机构
+        function toggleAsset(id,s) { tx(cMKT.setAssetStatus(id,s)); }
+        function govAdd() { tx(cID.addIssuer(document.getElementById("issuerAddr").value, document.getElementById("issuerName").value)); }
+        function govRevoke() { tx(cID.revokeIssuer(document.getElementById("issuerAddr").value)); }
+        function revokeIssuer(a) { tx(cID.revokeIssuer(a)); }
+        function revokeUser(a) { tx(cID.issueIdentity(a, "REVOKED", "Banned", 0)); }
+        function issueAction() { 
+            const u=document.getElementById("targetUser").value, r=document.getElementById("targetRegion").value, role=document.getElementById("targetRole").value, type=document.getElementById("targetType").value;
+            if(type==='user') tx(cID.issueIdentity(u,r,role,365)); else tx(cID.addIssuer(u,role+" Org"));
         }
 
-        function revokeIssuer(addr) { tx(cID.revokeIssuer(addr)); }
-        
-        // 吊销用户 (技巧：重新发一个有效期为 0 的证 = 立即过期)
-        function revokeUser(addr) { 
-            Swal.fire({title:'确定吊销该用户?', text:'将通过设置过期时间为0来实现', showCancelButton:true})
-            .then(res => {
-                if(res.isConfirmed) tx(cID.issueIdentity(addr, "REVOKED", "Banned", 0)); 
-            });
-        }
-
-        // ------------------ 路由 ------------------
+        // 导航
         function nav(page) {
             document.querySelectorAll('.view-section').forEach(e => e.classList.remove('active'));
             document.getElementById('view-'+page).classList.add('active');
             document.querySelectorAll('.sidebar a').forEach(e => e.classList.remove('active'));
             document.getElementById('nav-'+page).classList.add('active');
             
-            const map = {'market':'资产市场','profile':'个人中心','admin-assets':'资产后台','admin-users':'用户与机构管理','logs':'审计日志'};
-            document.getElementById('page-title').innerText = map[page];
+            const map={'market':'资产市场','profile':'个人中心','admin-assets':'资产管理','admin-users':'用户与机构','logs':'审计日志'};
+            document.getElementById('page-title').innerText=map[page];
 
-            // 懒加载数据
-            if(signer) {
-                if(page === 'admin-users') refreshAdminData();
-                if(page === 'logs') loadGlobalLogs();
-                if(page === 'profile') loadUserData();
-            }
+            if(page==='admin-users') refreshAdminData();
+            if(page==='logs') loadGlobalLogs();
+            if(page==='profile' && signer) loadMyInventory();
         }
-        
-        function refreshUI() {
-            loadMarketAssets();
-            if(signer) loadUserData();
-        }
-
     </script>
 </body>
 </html>
