@@ -386,54 +386,83 @@
             loadMyInventory();
         }
 
-        // 🚀 修复点 2：交易记录不显示
+        // 🚀 修复版：个人资产加载 (防超时/防节点限制)
         async function loadMyInventory() {
             const table = document.getElementById("my-inventory-table");
-            table.innerHTML = "<tr><td colspan='4' class='text-center'>正在从区块链同步...</td></tr>";
+            const countDisplay = document.getElementById("my-asset-count");
+            
+            if (!myAddr) return;
+
+            table.innerHTML = "<tr><td colspan='4' class='text-center'><div class='spinner-border spinner-border-sm text-primary'></div> 正在同步链上数据...</td></tr>";
 
             try {
-                // 1. 获取当前区块号
+                // 1. 获取当前区块
+                // 注意：如果这一步报错，说明节点连不通
                 const currentBlock = await cMKT.provider.getBlockNumber();
-                // 2. 只扫描最近 50,000 个区块 (防止公共节点超时)
-                const fromBlock = Math.max(0, currentBlock - 50000); 
+                
+                // 2. 设定查询范围：最近 5000 个区块 (约 15-20 分钟内的交易)
+                // *这是为了防止公共节点报错 "Log response size exceeded"*
+                // *如果你是昨天买的，这里可能查不到，需要点下面的 Etherscan 链接*
+                const range = 5000; 
+                const fromBlock = Math.max(0, currentBlock - range);
+                
+                console.log(`正在查询区块: ${fromBlock} 到 ${currentBlock}`);
 
                 const filter = cMKT.filters.TradeExecuted(myAddr, null);
-                const logs = await cMKT.queryFilter(filter, fromBlock, "latest"); 
+                const logs = await cMKT.queryFilter(filter, fromBlock, "latest");
                 
-                document.getElementById("my-asset-count").innerText = logs.length;
+                // 更新数量显示
+                // 注意：这里显示的只是"最近"的数量。为了严谨，我们显示 "+ logs.length"
+                countDisplay.innerText = logs.length > 0 ? logs.length : "0";
                 
                 if(logs.length === 0) {
-                    table.innerHTML = "<tr><td colspan='4' class='text-center text-muted py-4'>近期无购买记录 (仅显示最近 5万 区块)</td></tr>";
+                    table.innerHTML = `
+                        <tr><td colspan='4' class='text-center text-muted py-4'>
+                            <p class="mb-1">最近 ${range} 个区块内无交易。</p>
+                            <a href="https://sepolia.etherscan.io/address/${myAddr}#tokentxns" target="_blank" class="btn btn-sm btn-outline-primary mt-2">
+                                <i class="fas fa-external-link-alt"></i> 查看更早的历史 (Etherscan)
+                            </a>
+                        </td></tr>`;
                     return;
                 }
                 
                 let html = "";
-                // 倒序显示
+                // 倒序显示 (最新的在上面)
                 for(let i=logs.length-1; i>=0; i--) {
                     const log = logs[i];
-                    // 处理时间戳 (如果是 RPC 节点可能没有 timestamp，需要 getBlock)
-                    let dateStr = "Recently";
-                    try {
-                        const block = await log.getBlock();
-                        dateStr = new Date(block.timestamp * 1000).toLocaleString();
-                    } catch(e) {}
-
+                    // 简化处理：不再去 fetchBlock (省去 N 次网络请求，极大提升速度)
                     html += `
                         <tr>
-                            <td>${dateStr}</td>
-                            <td class="fw-bold">${log.args.assetName}</td>
+                            <td><span class="badge bg-success">Confirmed ✅</span></td>
+                            <td class="fw-bold text-primary">${log.args.assetName}</td>
                             <td>${log.args.price} HKC</td>
-                            <td><a href="https://sepolia.etherscan.io/tx/${log.transactionHash}" target="_blank" class="text-decoration-none">View ↗</a></td>
+                            <td><a href="https://sepolia.etherscan.io/tx/${log.transactionHash}" target="_blank" class="btn btn-xs btn-light border">View ↗</a></td>
                         </tr>
                     `;
                 }
+                
+                // 在表格底部加一个“查看更多”
+                html += `
+                    <tr><td colspan='4' class='text-center bg-light'>
+                        <small class="text-muted">仅显示最近交易 · </small>
+                        <a href="https://sepolia.etherscan.io/address/${myAddr}#tokentxns" target="_blank" class="text-decoration-none small">查看全部历史 ↗</a>
+                    </td></tr>
+                `;
+                
                 table.innerHTML = html;
+
             } catch(e) {
-                console.error("加载日志失败:", e);
-                table.innerHTML = "<tr><td colspan='4' class='text-center text-danger'>日志同步超时，请刷新重试</td></tr>";
+                console.error("日志加载失败:", e);
+                // 优雅降级：如果节点挂了，直接引导去浏览器看
+                table.innerHTML = `
+                    <tr><td colspan='4' class='text-center text-danger py-3'>
+                        <i class="fas fa-exclamation-triangle"></i> 节点响应超时<br>
+                        <a href="https://sepolia.etherscan.io/address/${myAddr}#tokentxns" target="_blank" class="btn btn-sm btn-outline-secondary mt-2">
+                            直接去区块链浏览器查看资产
+                        </a>
+                    </td></tr>`;
             }
         }
-
         // Admin: 刷新用户列表
         async function refreshAdminData() {
             if(!signer) return Swal.fire("请先连接钱包");
