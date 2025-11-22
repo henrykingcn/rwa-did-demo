@@ -3,215 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HKUST RWA/DID 终极控制台 (修复版)</title>
-    <!-- 引入 Bootstrap 5 -->
+    <title>HKUST RWA/DID 终极控制台 (V9.2)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- 引入 FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- 引入 Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <!-- 引入 Ethers.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
-    <!-- 引入 SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
         :root {
-            --bg-color: #0f172a;
-            --sidebar-bg: #1e293b;
-            --card-bg: #1e293b;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --accent-color: #3b82f6;
-            --success-color: #10b981;
-            --danger-color: #ef4444;
-            --warning-color: #f59e0b;
+            --bg-color: #0f172a; --sidebar-bg: #1e293b; --card-bg: #1e293b;
+            --text-primary: #f8fafc; --text-secondary: #94a3b8;
+            --accent-color: #3b82f6; --success-color: #10b981; --danger-color: #ef4444; --warning-color: #f59e0b;
             --sidebar-width: 260px;
         }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
-            overflow-x: hidden;
-        }
-
-        /* 侧边栏 */
-        .sidebar {
-            height: 100vh;
-            width: var(--sidebar-width);
-            position: fixed;
-            top: 0;
-            left: 0;
-            background: rgba(30, 41, 59, 0.95);
-            backdrop-filter: blur(10px);
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
-            padding-top: 20px;
-            z-index: 1000;
-            transition: 0.3s;
-        }
-
-        .sidebar-brand {
-            text-align: center;
-            padding: 0 20px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            margin-bottom: 20px;
-        }
-        
-        .sidebar-brand h4 {
-            font-weight: 700;
-            background: linear-gradient(45deg, #3b82f6, #8b5cf6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin: 0;
-        }
-
-        .nav-link {
-            padding: 12px 25px;
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            transition: 0.2s;
-            border-left: 3px solid transparent;
-            cursor: pointer;
-        }
-
-        .nav-link:hover, .nav-link.active {
-            color: var(--text-primary);
-            background: rgba(255, 255, 255, 0.03);
-            border-left-color: var(--accent-color);
-        }
-
+        body { background-color: var(--bg-color); color: var(--text-primary); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        .sidebar { height: 100vh; width: var(--sidebar-width); position: fixed; top: 0; left: 0; background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(10px); border-right: 1px solid rgba(255, 255, 255, 0.05); padding-top: 20px; z-index: 1000; transition: 0.3s; }
+        .sidebar-brand { text-align: center; padding: 0 20px 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 20px; }
+        .sidebar-brand h4 { font-weight: 700; background: linear-gradient(45deg, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; }
+        .nav-link { padding: 12px 25px; color: var(--text-secondary); display: flex; align-items: center; text-decoration: none; transition: 0.2s; border-left: 3px solid transparent; cursor: pointer; }
+        .nav-link:hover, .nav-link.active { color: var(--text-primary); background: rgba(255, 255, 255, 0.03); border-left-color: var(--accent-color); }
         .nav-link i { width: 24px; margin-right: 10px; text-align: center; }
-
-        /* 主内容 */
         .main-content { margin-left: var(--sidebar-width); padding: 30px; }
-
-        /* 顶部栏 */
-        .top-bar {
-            background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            padding: 15px 25px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-        }
-
-        /* 卡片 */
-        .card-custom {
-            background: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            padding: 25px;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
-
-        .card-header-custom {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
+        .top-bar { background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 15px 25px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2); }
+        .card-custom { background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 16px; padding: 25px; margin-bottom: 25px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1); }
+        .card-header-custom { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
         .card-title { font-size: 1.1rem; font-weight: 600; margin: 0; }
-
-        /* NFT 卡片 */
-        .asset-card {
-            background: #263345;
-            border-radius: 16px;
-            overflow: hidden;
-            transition: transform 0.3s, box-shadow 0.3s;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            position: relative;
-        }
-
-        .asset-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            border-color: var(--accent-color);
-        }
-
-        .asset-img {
-            height: 180px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: rgba(255,255,255,0.9);
-            position: relative;
-        }
-
-        .region-badge {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
+        .asset-card { background: #263345; border-radius: 16px; overflow: hidden; transition: transform 0.3s, box-shadow 0.3s; border: 1px solid rgba(255, 255, 255, 0.05); position: relative; }
+        .asset-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); border-color: var(--accent-color); }
+        .asset-img { height: 180px; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; font-weight: 800; color: rgba(255,255,255,0.9); position: relative; }
+        .region-badge { position: absolute; top: 12px; right: 12px; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; border: 1px solid rgba(255,255,255,0.1); }
         .asset-body { padding: 20px; }
-        
         .price-tag { color: var(--accent-color); font-weight: 700; font-size: 1.1rem; }
-
-        /* 按钮 */
-        .btn-primary-custom {
-            background: linear-gradient(45deg, #3b82f6, #2563eb);
-            border: none;
-            color: white;
-            font-weight: 600;
-            padding: 8px 20px;
-            border-radius: 8px;
-            transition: 0.2s;
-        }
+        .btn-primary-custom { background: linear-gradient(45deg, #3b82f6, #2563eb); border: none; color: white; font-weight: 600; padding: 8px 20px; border-radius: 8px; transition: 0.2s; }
         .btn-primary-custom:hover { background: linear-gradient(45deg, #2563eb, #1d4ed8); transform: scale(1.02); }
-
-        /* 表单 */
-        .form-control, .form-select {
-            background-color: #0f172a;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            color: white;
-        }
-        .form-control:focus, .form-select:focus {
-            background-color: #0f172a;
-            border-color: var(--accent-color);
-            color: white;
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
-        }
-
-        /* 状态点 */
+        .btn-danger-custom { background: linear-gradient(45deg, #ef4444, #dc2626); border: none; color: white; border-radius: 8px; }
+        .form-control, .form-select { background-color: #0f172a; border: 1px solid rgba(255, 255, 255, 0.1); color: white; }
+        .form-control:focus, .form-select:focus { background-color: #0f172a; border-color: var(--accent-color); color: white; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25); }
         .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
         .bg-success-glow { background-color: #10b981; box-shadow: 0 0 10px #10b981; }
         .bg-danger-glow { background-color: #ef4444; box-shadow: 0 0 10px #ef4444; }
-
         .view-section { display: none; animation: fadeIn 0.4s ease-out; }
         .view-section.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* 表格 */
         .table-dark-custom { color: var(--text-secondary); margin-bottom: 0; }
-        .table-dark-custom th {
-            background-color: rgba(255,255,255,0.02);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-        .table-dark-custom td {
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            vertical-align: middle;
-        }
+        .table-dark-custom th { background-color: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.1); font-weight: 600; color: var(--text-primary); }
+        .table-dark-custom td { border-bottom: 1px solid rgba(255,255,255,0.05); vertical-align: middle; }
     </style>
 </head>
 <body>
@@ -219,7 +56,7 @@
     <!-- 侧边栏 -->
     <nav class="sidebar">
         <div class="sidebar-brand">
-            <h4>🦁 RWA LAB <span style="font-size:0.6em; color:var(--text-secondary); display:block; margin-top:5px; font-weight:400">V9.1 Fixed</span></h4>
+            <h4>🦁 RWA LAB <span style="font-size:0.6em; color:var(--text-secondary); display:block; margin-top:5px; font-weight:400">V9.2 Fixed</span></h4>
         </div>
         
         <div class="nav flex-column">
@@ -237,7 +74,7 @@
     <!-- 主内容 -->
     <div class="main-content">
         
-        <!-- 顶部 -->
+        <!-- 顶部状态栏 -->
         <div class="top-bar">
             <div>
                 <h4 id="page-title" class="m-0" style="font-weight: 700;">资产交易市场</h4>
@@ -271,7 +108,7 @@
             </div>
         </div>
 
-        <!-- 2. 个人中心 (卖出) -->
+        <!-- 2. 个人中心 -->
         <div id="view-profile" class="view-section">
             <div class="card-custom" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); border:none;">
                 <div class="d-flex justify-content-between align-items-center text-white">
@@ -298,10 +135,10 @@
                 <div class="col-md-4">
                     <div class="card-custom border-top border-warning border-4">
                         <div class="card-header-custom"><h5 class="card-title text-warning">发起提案 (Maker)</h5></div>
-                        <input id="targetUser" class="form-control mb-2" placeholder="0x...">
+                        <input id="targetUser" class="form-control mb-2" placeholder="用户地址 (0x...)">
                         <select id="targetRegion" class="form-select mb-2"><option value="HK">HK 香港</option><option value="US">US 美国</option></select>
                         <select id="targetRole" class="form-select mb-4"><option value="Student">Student</option><option value="Investor">Investor</option></select>
-                        <button onclick="proposeID()" class="btn btn-warning w-100 fw-bold text-dark">发起</button>
+                        <button onclick="proposeID()" class="btn btn-warning w-100 fw-bold text-dark">发起提案</button>
                     </div>
                 </div>
                 <div class="col-md-8">
@@ -312,7 +149,7 @@
                         </div>
                         <table class="table table-dark-custom">
                             <thead><tr><th>ID</th><th>用户</th><th>角色</th><th>发起人</th><th>操作</th></tr></thead>
-                            <tbody id="proposal-table"><tr><td colspan="5" class="text-center text-muted">暂无</td></tr></tbody>
+                            <tbody id="proposal-table"><tr><td colspan="5" class="text-center text-muted py-3">暂无待办事项</td></tr></tbody>
                         </table>
                     </div>
                 </div>
@@ -343,7 +180,7 @@
             </div>
         </div>
 
-        <!-- 5. Gov & Logs -->
+        <!-- 5. Gov -->
         <div id="view-gov" class="view-section">
             <div class="row">
                 <div class="col-md-5">
@@ -359,21 +196,22 @@
                 </div>
             </div>
         </div>
+        
+        <!-- 6. Logs -->
         <div id="view-logs" class="view-section">
-            <div class="card-custom"><h5 class="card-title">日志</h5><table class="table table-dark-custom table-striped"><thead><tr><th>Type</th><th>Detail</th><th>Hash</th></tr></thead><tbody id="logs-table"></tbody></table></div>
+            <div class="card-custom"><h5 class="card-title">全网审计日志</h5><table class="table table-dark-custom table-striped"><thead><tr><th>类型</th><th>摘要</th><th>Hash</th></tr></thead><tbody id="logs-table"></tbody></table></div>
         </div>
 
     </div>
 
     <script>
-        // =================== ⚙️ 填入你的 V7 地址 ===================
+        // ==================== ⚙️ 配置区 (填入 V7 合约地址) ====================
         const ADDR_HKC      = "0x87223837968999795d39245a5E317118B2eF409a";
         const ADDR_ID       = "0x19629995cf34bed8B401B1C982c0466A991Ee47A";
         const ADDR_MARKET   = "0xce6229959aa0DeE977D6345a1fBFc8016244FE46";
         
-        // 备用 RPC 节点 (防止免钱包加载失败)
         const RPC_NODES = ["https://ethereum-sepolia.publicnode.com", "https://sepolia.drpc.org", "https://rpc.sepolia.org"];
-        // ===========================================================
+        // ====================================================================
 
         const ABI_ID = ["function proposeIdentity(address,string,string,uint256) external", "function approveIdentity(uint256) external", "function proposalCount() view returns (uint256)", "function getProposal(uint256) view returns (tuple(uint256 id, address targetUser, string region, string role, uint256 validityDays, address proposer, bool executed))", "function identities(address) view returns (address issuedBy, string region, string role, uint256 expiry, bool isValid)", "function issuers(address) view returns (bool isActive, string name)", "function getAllIssuers() view returns (address[])", "function addIssuer(address,string) external", "function revokeIssuer(address) external", "function checkCompliance(address,string,address) view returns (bool, string)", "event IssuerAdded(address,string)", "event IssuerRevoked(address)", "event IdentityIssued(address,address,string)"];
         const ABI_MKT = ["function addAsset(string,uint256,string,address) external", "function buyAsset(uint256) external", "function sellAsset(uint256) external", "function userBalances(address,uint256) view returns (uint256)", "function assetCount() view returns (uint256)", "function assets(uint256) view returns (string name, uint256 price, string requiredRegion, address requiredIssuer, bool isActive)", "function setAssetStatus(uint256, bool) external", "event TradeExecuted(address,string,uint256,string,uint256,uint256)"];
@@ -381,7 +219,7 @@
 
         let signer, myAddr, cID, cMKT, cHKC, provider;
 
-        // 初始化：尝试 RPC 连接
+        // 初始化
         window.onload = async () => {
             for(let url of RPC_NODES) {
                 try {
@@ -389,7 +227,7 @@
                     await provider.getBlockNumber();
                     console.log("RPC Connected:", url);
                     initContracts(provider);
-                    loadAssets(); // 免钱包加载
+                    loadAssets(); 
                     return;
                 } catch(e) {}
             }
@@ -402,7 +240,7 @@
         }
 
         async function connectWallet() {
-            if(!window.ethereum) return Swal.fire("Error", "Install MetaMask", "error");
+            if(!window.ethereum) return Swal.fire("Error", "Please Install MetaMask", "error");
             try {
                 const p = new ethers.providers.Web3Provider(window.ethereum);
                 await p.send("eth_requestAccounts", []);
@@ -414,9 +252,10 @@
                 document.getElementById("wallet-addr").innerText = myAddr.slice(0,6)+"...";
                 document.getElementById("id-badge").classList.remove("d-none");
                 
-                initContracts(signer); // 切换为 Signer (可写模式)
+                initContracts(signer);
                 refreshAll();
-            } catch(e) { console.error(e); }
+                return true;
+            } catch(e) { console.error(e); return false; }
         }
 
         function refreshAll() {
@@ -426,47 +265,63 @@
             if(document.getElementById("view-logs").classList.contains("active")) loadLogs();
         }
 
-        // --- 核心逻辑：自动检查 Signer ---
+        // --- 核心修复：自动检测并连接 Signer ---
         async function ensureSigner() {
             if(signer) return true;
-            await connectWallet();
-            return !!signer;
+            // 如果没有 signer，尝试连接
+            const success = await connectWallet();
+            return success;
         }
 
-        // 加载资产
+        // 业务逻辑
+        async function proposeID() { 
+            if (!await ensureSigner()) return;
+            const u=document.getElementById("targetUser").value, r=document.getElementById("targetRegion").value, role=document.getElementById("targetRole").value;
+            tx(cID.proposeIdentity(u,r,role,365), "提案已提交");
+        }
+
+        async function approveID(id) {
+            if (!await ensureSigner()) return;
+            const p = await cID.getProposal(id);
+            if(p.proposer.toLowerCase() === myAddr.toLowerCase()) return Swal.fire({icon:'error',title:'权限错误',text:'不能审批自己发起的提案',background:'#1e293b',color:'#fff'});
+            tx(cID.approveIdentity(id), "审批通过");
+        }
+
+        async function approveHKC() { if(await ensureSigner()) tx(cHKC.approve(ADDR_MARKET, ethers.constants.MaxUint256), "授权成功"); }
+        async function buy(id) { if(await ensureSigner()) tx(cMKT.buyAsset(id), "购买成功"); }
+        async function sell(id, n, p) { if(await ensureSigner()) tx(cMKT.sellAsset(id), `成功卖出 ${n}，获得 ${p} HKC`); }
+        async function addAsset() { if(await ensureSigner()) tx(cMKT.addAsset(document.getElementById("newAssetName").value, document.getElementById("newAssetPrice").value, document.getElementById("newAssetRegion").value, "0x0000000000000000000000000000000000000000"), "上架成功"); }
+        async function toggle(id, s) { if(await ensureSigner()) tx(cMKT.setAssetStatus(id, s), "状态更新"); }
+        async function govAdd() { if(await ensureSigner()) tx(cID.addIssuer(document.getElementById("issuerAddr").value, document.getElementById("issuerName").value), "授权成功"); }
+        async function govRevoke() { if(await ensureSigner()) tx(cID.revokeIssuer(document.getElementById("issuerAddr").value), "吊销成功"); }
+
+        // 通用交易处理
+        async function tx(p, msg) {
+            try {
+                Swal.fire({title:'等待确认...', didOpen:()=>Swal.showLoading(), background:'#1e293b', color:'#fff'});
+                const t = await p;
+                Swal.fire({title:'上链中...', didOpen:()=>Swal.showLoading(), background:'#1e293b', color:'#fff'});
+                await t.wait();
+                Swal.fire({icon:'success', title:'成功', text:msg, background:'#1e293b', color:'#fff'});
+                refreshAll();
+            } catch(e) { Swal.fire({icon:'error', title:'错误', text:e.reason||e.message, background:'#1e293b', color:'#fff'}); }
+        }
+
+        // 读取逻辑
         async function loadAssets() {
             const mGrid = document.getElementById("market-grid");
             const aTable = document.getElementById("admin-table");
             if(!cMKT) return;
             mGrid.innerHTML = ""; aTable.innerHTML = "";
-            
             try {
                 const count = await cMKT.assetCount();
                 if(count.toNumber() === 0) mGrid.innerHTML = "<div class='text-center text-muted py-5'>暂无资产</div>";
-
                 for(let i=1; i<=count; i++) {
                     const a = await cMKT.assets(i);
-                    // 市场卡片
                     if(a.isActive) {
                         const hue = (i*137)%360;
-                        mGrid.innerHTML += `
-                        <div class="col-md-4 col-lg-3 mb-4">
-                            <div class="asset-card">
-                                <div class="asset-img" style="background:linear-gradient(135deg, hsl(${hue},60%,20%), hsl(${hue},70%,40%))">
-                                    ${a.name.substring(0,2).toUpperCase()}
-                                    <span class="region-badge">${a.requiredRegion || 'GLOBAL'}</span>
-                                </div>
-                                <div class="asset-body">
-                                    <h5 class="fw-bold mb-1">${a.name}</h5>
-                                    <div class="d-flex justify-content-between align-items-center mt-3">
-                                        <span class="price-tag">${a.price} HKC</span>
-                                        <button class="btn btn-sm btn-primary-custom" onclick="buy(${i})">购买</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>`;
+                        mGrid.innerHTML += `<div class="col-md-4 col-lg-3 mb-4"><div class="asset-card"><div class="asset-img" style="background:linear-gradient(135deg, hsl(${hue},60%,20%), hsl(${hue},70%,40%))">${a.name.substring(0,2).toUpperCase()}<span class="region-badge">${a.requiredRegion || 'GLOBAL'}</span></div><div class="asset-body"><h5 class="fw-bold mb-1">${a.name}</h5><div class="d-flex justify-content-between align-items-center mt-3"><span class="price-tag">${a.price} HKC</span><button class="btn btn-sm btn-primary-custom" onclick="buy(${i})">购买</button></div></div></div></div>`;
                     }
-                    // Admin 表格
                     aTable.innerHTML += `<tr><td>${i}</td><td>${a.name}</td><td>${a.price} HKC</td><td>${a.isActive?'<span class="text-success">上架</span>':'<span class="text-danger">下架</span>'}</td><td><button class="btn btn-sm btn-outline-secondary" onclick="toggle(${i},${!a.isActive})">切换</button></td></tr>`;
                 }
             } catch(e) { console.error(e); }
@@ -474,10 +329,8 @@
 
         async function loadUserData() {
             if(!myAddr) return;
-            // 余额
             const bal = await cHKC.balanceOf(myAddr);
             document.getElementById("hkc-bal").innerText = ethers.utils.formatUnits(bal, 18).split('.')[0];
-            // 身份
             const id = await cID.identities(myAddr);
             if(id.isValid && Date.now()/1000 < id.expiry) {
                 document.getElementById("profile-role").innerText = id.role;
@@ -488,7 +341,6 @@
                 document.getElementById("profile-role").innerText = "无有效身份";
                 document.getElementById("id-text").innerHTML = `<span class="status-dot bg-danger-glow"></span> 无身份`;
             }
-            // 持仓 (V6/V7 userBalances)
             const grid = document.getElementById("inventory-grid"); grid.innerHTML = "";
             const count = await cMKT.assetCount();
             let has = false;
@@ -498,25 +350,12 @@
                     has = true;
                     const a = await cMKT.assets(i);
                     const hue = (i*137)%360;
-                    grid.innerHTML += `
-                    <div class="col-md-3 mb-4">
-                        <div class="asset-card" style="border-color:var(--success-color)">
-                            <div class="asset-img" style="height:120px; background:hsl(${hue},50%,20%)">
-                                ${a.name.substring(0,2)}
-                                <span class="badge bg-success position-absolute top-0 end-0 m-2">持有: ${bal}</span>
-                            </div>
-                            <div class="p-3 text-center">
-                                <h6 class="mb-2">${a.name}</h6>
-                                <button class="btn btn-sm btn-danger-custom w-100" onclick="sell(${i}, '${a.name}', ${a.price})">卖出 (变现)</button>
-                            </div>
-                        </div>
-                    </div>`;
+                    grid.innerHTML += `<div class="col-md-3 mb-4"><div class="asset-card" style="border-color:var(--success-color)"><div class="asset-img" style="height:120px; background:hsl(${hue},50%,20%)">${a.name.substring(0,2)}<span class="badge bg-success position-absolute top-0 end-0 m-2">持有: ${bal}</span></div><div class="p-3 text-center"><h6 class="mb-2">${a.name}</h6><button class="btn btn-sm btn-danger-custom w-100" onclick="sell(${i}, '${a.name}', ${a.price})">卖出 (变现)</button></div></div></div>`;
                 }
             }
             if(!has) grid.innerHTML = "<div class='text-center text-muted w-100 py-5'>暂无资产</div>";
         }
 
-        // --- 功能区 ---
         async function loadProposals() {
             const t = document.getElementById("proposal-table"); t.innerHTML = "";
             try {
@@ -526,7 +365,7 @@
                     const p = await cID.getProposal(i);
                     if(!p.executed) {
                         has = true;
-                        t.innerHTML += `<tr><td>#${p.id}</td><td class="font-monospace small">${p.targetUser.slice(0,6)}...</td><td><span class="badge bg-info text-dark">${p.role}</span></td><td class="small">${p.proposer.slice(0,6)}...</td><td><button class="btn btn-sm btn-success" onclick="approveID(${p.id})">批准</button></td></tr>`;
+                        t.innerHTML += `<tr><td>#${p.id}</td><td class="font-monospace small">${p.targetUser.slice(0,6)}...</td><td><span class="badge bg-info text-dark">${p.role}</span></td><td class="small">${p.proposer.slice(0,6)}...</td><td><button class="btn btn-sm btn-primary-custom" onclick="approveID(${p.id})">批准</button></td></tr>`;
                     }
                 }
                 if(!has) t.innerHTML = "<tr><td colspan='5' class='text-center text-muted py-3'>无待办</td></tr>";
@@ -554,42 +393,9 @@
             }
         }
 
-        // --- 核心修复：自动检测并连接 Signer ---
-        async function tx(p, msg) {
-            if(!await ensureSigner()) return; // 自动连接拦截
-            try {
-                Swal.fire({title:'等待确认...', didOpen:()=>Swal.showLoading(), background:'#1e293b', color:'#fff'});
-                const t = await p;
-                Swal.fire({title:'上链中...', didOpen:()=>Swal.showLoading(), background:'#1e293b', color:'#fff'});
-                await t.wait();
-                Swal.fire({icon:'success', title:'成功', text:msg, background:'#1e293b', color:'#fff'});
-                refreshAll();
-            } catch(e) { Swal.fire({icon:'error', title:'错误', text:e.reason||e.message, background:'#1e293b', color:'#fff'}); }
-        }
-
-        // 业务函数封装
-        function approveHKC() { tx(cHKC.approve(ADDR_MARKET, ethers.constants.MaxUint256), "授权成功"); }
-        function buy(id) { tx(cMKT.buyAsset(id), "购买成功"); }
-        function sell(id, n, p) { tx(cMKT.sellAsset(id), `成功卖出 ${n}，获得 ${p} HKC`); }
-        function addAsset() { tx(cMKT.addAsset(document.getElementById("newAssetName").value, document.getElementById("newAssetPrice").value, document.getElementById("newAssetRegion").value, "0x0000000000000000000000000000000000000000"), "上架成功"); }
-        function toggle(id, s) { tx(cMKT.setAssetStatus(id, s), "状态更新"); }
-        function govAdd() { tx(cID.addIssuer(document.getElementById("issuerAddr").value, document.getElementById("issuerName").value), "授权成功"); }
-        function govRevoke() { tx(cID.revokeIssuer(document.getElementById("issuerAddr").value), "吊销成功"); }
-        function proposeID() { 
-            const u=document.getElementById("targetUser").value, r=document.getElementById("targetRegion").value, role=document.getElementById("targetRole").value;
-            tx(cID.proposeIdentity(u,r,role,365), "提案已提交");
-        }
-        async function approveID(id) {
-            const p = await cID.getProposal(id);
-            if(p.proposer.toLowerCase() === myAddr.toLowerCase()) return Swal.fire({icon:'error',title:'权限错误',text:'不能审批自己发起的提案',background:'#1e293b',color:'#fff'});
-            tx(cID.approveIdentity(id), "审批通过");
-        }
-
         function nav(p) {
             document.querySelectorAll('.view-section').forEach(e=>e.classList.remove('active')); document.getElementById('view-'+p).classList.add('active');
             document.querySelectorAll('.nav-link').forEach(e=>e.classList.remove('active')); document.getElementById('nav-'+p).classList.add('active');
-            const t={'market':'资产市场','profile':'个人中心 & 卖出','issuer':'多签发证','admin':'资产后台','gov':'监管机构','logs':'审计日志'};
-            document.getElementById('page-title').innerText = t[p];
             if(signer) {
                 if(p==='issuer') loadProposals();
                 if(p==='gov') loadIssuerList();
