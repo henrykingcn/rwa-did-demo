@@ -386,39 +386,44 @@
             loadMyInventory();
         }
 
-        // 🚀 修复版：个人资产加载 (防超时/防节点限制)
+        // 🚀 暴力修复版：加载个人资产
         async function loadMyInventory() {
             const table = document.getElementById("my-inventory-table");
             const countDisplay = document.getElementById("my-asset-count");
             
             if (!myAddr) return;
 
-            table.innerHTML = "<tr><td colspan='4' class='text-center'><div class='spinner-border spinner-border-sm text-primary'></div> 正在同步链上数据...</td></tr>";
+            table.innerHTML = "<tr><td colspan='4' class='text-center'><div class='spinner-border spinner-border-sm text-primary'></div> 正在暴力检索链上数据...</td></tr>";
 
             try {
-                // 1. 获取当前区块
-                // 注意：如果这一步报错，说明节点连不通
-                const currentBlock = await cMKT.provider.getBlockNumber();
-                
-                // 2. 设定查询范围：最近 5000 个区块 (约 15-20 分钟内的交易)
-                // *这是为了防止公共节点报错 "Log response size exceeded"*
-                // *如果你是昨天买的，这里可能查不到，需要点下面的 Etherscan 链接*
-                const range = 5000; 
-                const fromBlock = Math.max(0, currentBlock - range);
-                
-                console.log(`正在查询区块: ${fromBlock} 到 ${currentBlock}`);
+                // 1. 扩大搜索范围：查最近 100,000 个区块 (涵盖过去 3-4 天的交易)
+                // 使用负数表示“从最新区块倒推”
+                const fromBlock = -100000; 
 
-                const filter = cMKT.filters.TradeExecuted(myAddr, null);
-                const logs = await cMKT.queryFilter(filter, fromBlock, "latest");
+                console.log(`正在抓取最近 ${Math.abs(fromBlock)} 个区块的所有交易...`);
+
+                // 2. 关键修改：不再向节点发送过滤条件，而是查询“所有交易”
+                // 公共节点对 "filter(myAddr)" 的支持很差，但对 "filterAll" 支持很好
+                const filter = cMKT.filters.TradeExecuted(); 
+                const allLogs = await cMKT.queryFilter(filter, fromBlock, "latest");
+                
+                console.log(`全网共检索到 ${allLogs.length} 笔交易`);
+
+                // 3. 在本地 JS 里过滤属于我的交易 (Client-side Filtering)
+                // 注意：地址要转小写比较，防止大小写敏感问题
+                const myLogs = allLogs.filter(log => 
+                    log.args.user.toLowerCase() === myAddr.toLowerCase()
+                );
+
+                console.log(`其中属于我的有 ${myLogs.length} 笔`);
                 
                 // 更新数量显示
-                // 注意：这里显示的只是"最近"的数量。为了严谨，我们显示 "+ logs.length"
-                countDisplay.innerText = logs.length > 0 ? logs.length : "0";
+                countDisplay.innerText = myLogs.length;
                 
-                if(logs.length === 0) {
+                if(myLogs.length === 0) {
                     table.innerHTML = `
                         <tr><td colspan='4' class='text-center text-muted py-4'>
-                            <p class="mb-1">最近 ${range} 个区块内无交易。</p>
+                            <p class="mb-1">最近 3 天内无交易。</p>
                             <a href="https://sepolia.etherscan.io/address/${myAddr}#tokentxns" target="_blank" class="btn btn-sm btn-outline-primary mt-2">
                                 <i class="fas fa-external-link-alt"></i> 查看更早的历史 (Etherscan)
                             </a>
@@ -428,9 +433,8 @@
                 
                 let html = "";
                 // 倒序显示 (最新的在上面)
-                for(let i=logs.length-1; i>=0; i--) {
-                    const log = logs[i];
-                    // 简化处理：不再去 fetchBlock (省去 N 次网络请求，极大提升速度)
+                for(let i=myLogs.length-1; i>=0; i--) {
+                    const log = myLogs[i];
                     html += `
                         <tr>
                             <td><span class="badge bg-success">Confirmed ✅</span></td>
@@ -440,29 +444,14 @@
                         </tr>
                     `;
                 }
-                
-                // 在表格底部加一个“查看更多”
-                html += `
-                    <tr><td colspan='4' class='text-center bg-light'>
-                        <small class="text-muted">仅显示最近交易 · </small>
-                        <a href="https://sepolia.etherscan.io/address/${myAddr}#tokentxns" target="_blank" class="text-decoration-none small">查看全部历史 ↗</a>
-                    </td></tr>
-                `;
-                
                 table.innerHTML = html;
 
             } catch(e) {
                 console.error("日志加载失败:", e);
-                // 优雅降级：如果节点挂了，直接引导去浏览器看
-                table.innerHTML = `
-                    <tr><td colspan='4' class='text-center text-danger py-3'>
-                        <i class="fas fa-exclamation-triangle"></i> 节点响应超时<br>
-                        <a href="https://sepolia.etherscan.io/address/${myAddr}#tokentxns" target="_blank" class="btn btn-sm btn-outline-secondary mt-2">
-                            直接去区块链浏览器查看资产
-                        </a>
-                    </td></tr>`;
+                table.innerHTML = `<tr><td colspan='4' class='text-center text-danger'>数据同步延迟，请直接点击 Etherscan 查看</td></tr>`;
             }
         }
+
         // Admin: 刷新用户列表
         async function refreshAdminData() {
             if(!signer) return Swal.fire("请先连接钱包");
