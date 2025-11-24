@@ -98,7 +98,12 @@
                             <button class="btn btn-outline-secondary" onclick="fillMyAddress()">Me</button>
                         </div>
                         <div class="row g-2 mb-4">
-                            <div class="col"><select id="targetRegion" class="form-select"><option value="HK">HK 香港</option><option value="US">US 美国</option><option value="NK">NK 北韩 (Ban)</option></select></div>
+                            <div class="col"><select id="targetRegion" class="form-select">
+                                <option value="HK">HK 香港</option>
+                                <option value="Global">Global 通用</option>
+                                <option value="US">US 美国</option>
+                                <option value="NK">NK 北韩 (Ban)</option>
+                            </select></div>
                             <div class="col"><select id="targetRole" class="form-select"><option value="Student">Student</option><option value="Investor">Investor</option></select></div>
                         </div>
                         <div id="issue-btn-area"><button class="btn btn-secondary w-100" disabled>Connect Wallet</button></div>
@@ -148,18 +153,14 @@
                     <div class="card-box root-only mb-4" style="border-top:4px solid #dc2626; display:none;">
                         <h5 class="card-label text-danger">Root 独裁操作 (God Mode)</h5>
                         <div class="mb-3">
-                            <label class="small text-muted">强制创建/暂停机构</label>
+                            <label class="small text-muted">强制创建机构</label>
                             <input id="rootIssuerAddr" class="form-control mt-1 mb-2" placeholder="机构地址">
                             <input id="rootIssuerName" class="form-control mb-2" placeholder="名称">
                             <div class="d-flex gap-2 mb-2">
                                 <select id="rootIssuerScope" class="form-select form-select-sm">
-                                    <option value="Global">Global</option><option value="HK">HK</option><option value="US">US</option><option value="NK">NK (Ban)</option>
+                                    <option value="Global">Global</option><option value="HK">HK</option><option value="US">US</option><option value="NK">NK</option>
                                 </select>
                                 <button onclick="rootAddOrg()" class="btn btn-sm btn-danger w-50">Create</button>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button onclick="rootToggle(true)" class="btn btn-sm btn-outline-warning w-50">Pause</button>
-                                <button onclick="rootToggle(false)" class="btn btn-sm btn-outline-success w-50">Resume</button>
                             </div>
                         </div>
                     </div>
@@ -167,22 +168,30 @@
                     <div class="card-box" style="border-top:4px solid #4f46e5">
                         <h5 class="card-label text-primary">发起治理提案 (MultiSig)</h5>
                         <ul class="nav nav-tabs mb-3" id="govTab" role="tablist">
-                            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-org">建下属机构</button></li>
+                            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-org">建机构</button></li>
                             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-admin">任命Admin</button></li>
+                            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pause">暂停机构</button></li>
                         </ul>
                         <div class="tab-content">
                             <div class="tab-pane fade show active" id="tab-org">
                                 <input id="propOrgAddr" class="form-control mb-2" placeholder="新机构地址">
                                 <input id="propOrgName" class="form-control mb-2" placeholder="机构名称">
                                 <select id="propOrgScope" class="form-select mb-2">
-                                    <option value="HK">HK</option><option value="US">US</option><option value="NK">NK (Ban)</option>
+                                    <option value="HK">HK</option><option value="Global">Global 通用</option><option value="US">US</option><option value="NK">NK (Ban)</option>
                                 </select>
-                                <button onclick="proposeGov(2)" class="btn btn-primary-custom w-100">发起建机构提案</button>
+                                <button onclick="proposeGov(2)" class="btn btn-primary-custom w-100">发起提案</button>
                             </div>
                             <div class="tab-pane fade" id="tab-admin">
                                 <input id="propAdminAddr" class="form-control mb-2" placeholder="新管理员地址">
                                 <input id="propAdminTargetOrg" class="form-control mb-2" placeholder="目标机构地址 (空=本机构)">
-                                <button onclick="proposeGov(1)" class="btn btn-primary-custom w-100">发起任命提案</button>
+                                <button onclick="proposeGov(1)" class="btn btn-primary-custom w-100">发起提案</button>
+                            </div>
+                            <div class="tab-pane fade" id="tab-pause">
+                                <input id="propPauseOrgAddr" class="form-control mb-2" placeholder="目标机构地址">
+                                <div class="d-flex gap-2">
+                                    <button onclick="proposeGov(3, 'true')" class="btn btn-warning w-50">暂停 (Pause)</button>
+                                    <button onclick="proposeGov(3, 'false')" class="btn btn-success w-50">恢复 (Resume)</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -236,21 +245,21 @@
 
     <script>
         // ==================== ⚠️ 填入新部署的地址 ====================
-        const ADDR_HKC      = "0xf070Ef78e0c4683E0af44dF29D9aDB2366646c95"; // 你的 Token
-        const ADDR_ID       = "0x646a7cD03dA4f1F6b90A9B92c320712AA55158b5"; // 🔥 新 Identity 地址
-        const ADDR_MARKET   = "0x07D9F1A3E407258Ecb37E0fc5d383b2da6094f58"; // 🔥 新 Market 地址
+        const ADDR_HKC      = "0x8EC01edCD7f62A5C7c46e8dE98dDD44aA5778724"; 
+        const ADDR_ID       = "0xF7977155bEEb962BF178c71bB6baC42DB7F166B3"; // 🔥 NEW ID ADDR (SystemV20)
+        const ADDR_MARKET   = "0x2bEc92dCD85e1037681e4B572f729ed0D9255BA5"; // 🔥 NEW MARKET ADDR (SystemV20)
         const RPC_URL       = "https://ethereum-sepolia.publicnode.com"; 
         // ==========================================================
 
         const ABI_ID = [
             "function rootIssue(address,string,string,uint256) external", 
             "function rootAddIssuer(address,string,string,address) external",
-            "function toggleIssuerPause(address,bool) external",
+            "function rootToggleIssuerPause(address,bool) external",
+            "function rootRevokeIdentity(address) external", // 🔥 Root Direct
             "function proposeIdentity(address,string,string,uint256) external", 
             "function approveIdentity(uint256) external", 
             "function proposeGovAction(uint8,address,address,string,string) external",
             "function approveGovAction(uint256) external",
-            "function revokeIdentity(address) external", // 🔥 Added Revoke
             "function owner() view returns (address)", 
             "function govProposalCount() view returns (uint256)", 
             "function idProposalCount() view returns (uint256)", 
@@ -269,6 +278,7 @@
 
         let signer, myAddr, cID, cMKT, cHKC;
         let myOrgAddr = ethers.constants.AddressZero;
+        let isRoot = false;
 
         window.onload = async () => {
             document.getElementById("link-hkc").href = `https://sepolia.etherscan.io/address/${ADDR_HKC}`;
@@ -291,7 +301,7 @@
             cHKC = new ethers.Contract(ADDR_HKC, ABI_HKC, signer);
 
             document.getElementById("btn-conn").style.display="none";
-            document.getElementById("wallet-badge").innerText = myAddr.slice(0,6)+"...";
+            document.getElementById("wallet-badge").innerText = myAddr;
             document.getElementById("wallet-badge").classList.remove("d-none");
             
             await checkRole();
@@ -302,7 +312,7 @@
             try {
                 const owner = await cID.owner();
                 myOrgAddr = await cID.adminOrg(myAddr);
-                const isRoot = (owner.toLowerCase() === myAddr.toLowerCase());
+                isRoot = (owner.toLowerCase() === myAddr.toLowerCase());
                 const isAdmin = (myOrgAddr !== ethers.constants.AddressZero);
 
                 let roleText = "User";
@@ -360,9 +370,6 @@
             } catch(e) { 
                 let err = e.reason || e.message;
                 if(err.includes("Sanctioned")) err = "制裁：NK (北韩) 地区禁止此操作";
-                if(err.includes("Insufficient Allowance")) err = "授权不足：请先点击'资金授权'";
-                if(err.includes("Insufficient Balance")) err = "余额不足：你的 HKC 不够";
-                if(err.includes("Identity Invalid")) err = "身份无效：可能已被吊销或过期";
                 Swal.fire("Error", err, "error"); 
             }
         }
@@ -376,23 +383,48 @@
             tx(cID.rootAddIssuer(document.getElementById("rootIssuerAddr").value, document.getElementById("rootIssuerName").value, document.getElementById("rootIssuerScope").value, ethers.constants.AddressZero), "Org Created");
         }
         function rootToggle(pause) {
-            tx(cID.toggleIssuerPause(document.getElementById("rootIssuerAddr").value, pause), "Status Changed");
+            tx(cID.rootToggleIssuerPause(document.getElementById("rootIssuerAddr").value, pause), "Status Changed");
         }
-        function proposeGov(type) {
-            const target = (type==1) ? document.getElementById("propAdminAddr").value : document.getElementById("propOrgAddr").value;
-            const name = (type==2) ? document.getElementById("propOrgName").value : "";
-            const scope = (type==2) ? document.getElementById("propOrgScope").value : "";
-            let targetOrg = document.getElementById("propAdminTargetOrg") ? document.getElementById("propAdminTargetOrg").value : "";
-            if(targetOrg === "") targetOrg = ethers.constants.AddressZero;
+        
+        // 🔥 MultiSig Router for Type 1,2,3,4
+        function proposeGov(type, extraParam) {
+            let target, targetOrg, name="", scope="";
+            
+            if (type==1) { // Add Admin
+                target = document.getElementById("propAdminAddr").value;
+                targetOrg = document.getElementById("propAdminTargetOrg").value || ethers.constants.AddressZero;
+            } else if (type==2) { // Add Org
+                target = document.getElementById("propOrgAddr").value;
+                name = document.getElementById("propOrgName").value;
+                scope = document.getElementById("propOrgScope").value;
+                targetOrg = ethers.constants.AddressZero;
+            } else if (type==3) { // Pause Org
+                targetOrg = document.getElementById("propPauseOrgAddr").value;
+                name = extraParam; // "true" or "false"
+                target = ethers.constants.AddressZero;
+            } else if (type==4) { // Revoke Identity (via helper)
+                target = extraParam; // User Addr passed from button
+                targetOrg = ethers.constants.AddressZero; 
+            }
+
             tx(cID.proposeGovAction(type, target, targetOrg, name, scope), "Proposal Created");
         }
+
         function approveGov(id) { tx(cID.approveGovAction(id), "Approved"); }
         function proposeID() {
             const u=document.getElementById("targetUser").value;
             tx(cID.proposeIdentity(u, document.getElementById("targetRegion").value, document.getElementById("targetRole").value, 365), "ID Proposed");
         }
         function approveID(id) { tx(cID.approveIdentity(id), "ID Approved"); }
-        function revokeID(u) { tx(cID.revokeIdentity(u), "Identity Revoked"); } // 🔥 Call Revoke
+
+        // 🔥 Revoke Logic: Root -> Direct, Admin -> Proposal
+        function revokeID(u) {
+            if(isRoot) {
+                tx(cID.rootRevokeIdentity(u), "Revoked (Root)");
+            } else {
+                proposeGov(4, u); // Trigger Type 4 Proposal
+            }
+        }
 
         function approveHKC() { tx(cHKC.approve(ADDR_MARKET, ethers.constants.MaxUint256), "Approved"); }
         function buy(id) { tx(cMKT.buyAsset(id), "Bought"); }
@@ -464,8 +496,13 @@
             for(let i=c; i>Math.max(0,c-5); i--) {
                 const p = await cID.getGovProposal(i);
                 if(!p.executed) {
-                    let desc = p.actionType===1 ? "Add Admin" : `New Org: ${p.payloadName}`;
-                    t.innerHTML+=`<tr><td>${p.actionType===1?'Admin':'Org'}</td><td>${p.targetAddr.slice(0,6)}...</td><td>${desc}</td><td><button onclick="approveGov(${p.id})" class="btn btn-sm btn-primary-custom">Approve</button></td></tr>`;
+                    let desc = "Unknown";
+                    if(p.actionType===1) desc = "Add Admin";
+                    if(p.actionType===2) desc = `Add Org: ${p.payloadName}`;
+                    if(p.actionType===3) desc = `Pause Org: ${p.payloadName}`;
+                    if(p.actionType===4) desc = `Revoke User: ${p.targetAddr.slice(0,6)}...`;
+                    
+                    t.innerHTML+=`<tr><td>Type ${p.actionType}</td><td>${p.targetOrg.slice(0,6)}...</td><td>${desc}</td><td><button onclick="approveGov(${p.id})" class="btn btn-sm btn-primary-custom">Approve</button></td></tr>`;
                 }
             }
         }
@@ -486,10 +523,10 @@
                 const list = await cID.getOrgUsers(myOrgAddr);
                 for(let u of list) {
                     const id = await cID.identities(u);
-                    // 🔥 Add Revoked Status Check
                     let status = id.isValid ? '✅ Valid' : '❌ Revoked';
+                    // 🔥 Revoke Button: 
+                    // If Valid, show button. If Root -> Direct call. If Admin -> Proposal.
                     let btn = id.isValid ? `<button onclick="revokeID('${u}')" class="btn btn-sm btn-outline-danger">吊销</button>` : `<span class="text-muted">-</span>`;
-                    
                     t.innerHTML+=`<tr><td>${u.slice(0,10)}...</td><td>${id.region}</td><td>${id.role}</td><td>${status}</td><td>${btn}</td></tr>`;
                 }
             } catch(e){}
