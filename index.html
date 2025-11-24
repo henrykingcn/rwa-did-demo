@@ -2,130 +2,75 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HKUST RWA Platform (V13.1 Fixed)</title>
+    <title>HKUST RWA Exchange</title>
+    <!-- 引入库 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-    <style>
-        /* 还原 V13 的纯白清爽配色 */
-        :root {
-            --primary: #2563eb; --primary-dark: #1d4ed8; 
-            --bg-body: #f8fafc; --bg-card: #ffffff; 
-            --text-main: #0f172a; --text-sub: #64748b;
-            --border: #e2e8f0;
-            --sidebar-width: 260px;
-            --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05);
-            --shadow-hover: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
-        }
-
-        body { background: var(--bg-body); color: var(--text-main); font-family: 'Inter', sans-serif; overflow-x: hidden; }
-
-        /* 侧边栏 */
-        .sidebar { width: var(--sidebar-width); height: 100vh; position: fixed; top: 0; left: 0; background: var(--bg-card); border-right: 1px solid var(--border); z-index: 1000; padding-top: 24px; }
-        .brand { padding: 0 24px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
-        .brand h4 { font-weight: 800; color: var(--primary); margin: 0; letter-spacing: -0.5px; }
-        .nav-item { padding: 12px 24px; color: var(--text-sub); display: flex; align-items: center; cursor: pointer; transition: 0.2s; border-left: 3px solid transparent; font-weight: 500; }
-        .nav-item:hover { background: #f1f5f9; color: var(--primary); }
-        .nav-item.active { background: #eff6ff; color: var(--primary); border-left-color: var(--primary); font-weight: 600; }
-        .nav-item i { width: 24px; margin-right: 12px; text-align: center; font-size: 1.1rem; }
-        
-        /* 主区域 */
-        .main-content { margin-left: var(--sidebar-width); padding: 32px 40px; }
-        .top-bar { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; box-shadow: var(--shadow-sm); }
-        
-        /* 卡片通用 */
-        .card-modern { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 24px; box-shadow: var(--shadow-sm); transition: 0.3s; margin-bottom: 24px; }
-        
-        /* 🏆 NFT 卡片样式 (V13 原版) */
-        .asset-card { background: white; border-radius: 16px; overflow: hidden; border: 1px solid var(--border); transition: all 0.3s ease; position: relative; box-shadow: var(--shadow-sm); }
-        .asset-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-hover); border-color: #bfdbfe; }
-        
-        .asset-img { 
-            height: 180px; 
-            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); 
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 2.5rem; font-weight: 800; color: #94a3b8; 
-            position: relative; 
-        }
-        
-        .asset-badge { 
-            position: absolute; top: 12px; right: 12px; 
-            background: rgba(255,255,255,0.95); color: #0f172a; 
-            padding: 4px 10px; border-radius: 20px; 
-            font-size: 0.75rem; font-weight: 700; 
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
-        }
-        
-        .asset-body { padding: 20px; }
-        .asset-title { font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
-        .asset-price { font-size: 1.25rem; font-weight: 800; color: var(--primary); }
-        
-        .btn-action { width: 100%; padding: 10px; border-radius: 10px; border: none; font-weight: 600; transition: 0.2s; margin-top: 15px; }
-        .btn-buy { background: #0f172a; color: white; }
-        .btn-buy:hover { background: var(--primary); }
-        .btn-sell { background: white; border: 1px solid #ef4444; color: #ef4444; }
-        .btn-sell:hover { background: #ef4444; color: white; }
-
-        /* 状态与权限 */
-        .admin-only, .root-only { display: none !important; }
-        .view-section { display: none; animation: fadeUp 0.3s ease; }
-        .view-section.active { display: block; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .form-control, .form-select { padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: #f8fafc; }
-        .form-control:focus { background: white; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-    </style>
+    
+    <!-- 引入美化后的 CSS -->
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
+    <!-- 侧边栏 -->
     <nav class="sidebar">
         <div class="brand">
-            <h4>🦁 RWA.Fi</h4>
-            <small style="color:#64748b">V13.1 Fixed</small>
+            <div class="brand-icon"><i class="fas fa-cube"></i></div>
+            <div class="brand-text">
+                <h4>RWA.Fi</h4>
+                <small>HKUST Demo</small>
+            </div>
         </div>
         
-        <div class="px-3 mb-2"><small class="text-uppercase text-muted fw-bold" style="font-size:0.7rem">Marketplace</small></div>
-        <div onclick="nav('market')" class="nav-item active" id="nav-market"><i class="fas fa-store-alt"></i> 交易市场</div>
+        <div class="nav-section-label">Marketplace</div>
+        <div onclick="nav('market')" class="nav-item active" id="nav-market"><i class="fas fa-store"></i> 交易市场</div>
         <div onclick="nav('profile')" class="nav-item" id="nav-profile"><i class="fas fa-wallet"></i> 我的资产 (Sell)</div>
 
         <div class="admin-only">
-            <div class="px-3 mt-4 mb-2"><small class="text-uppercase text-muted fw-bold" style="font-size:0.7rem">Admin Zone</small></div>
-            <div onclick="nav('issuer')" class="nav-item" id="nav-issuer"><i class="fas fa-file-signature"></i> 发证管理 (Multi-Sig)</div>
-            <div onclick="nav('logs')" class="nav-item" id="nav-logs"><i class="fas fa-history"></i> 审计日志</div>
+            <div class="nav-section-label">Admin Console</div>
+            <div onclick="nav('issuer')" class="nav-item" id="nav-issuer"><i class="fas fa-stamp"></i> 发证管理 (Maker)</div>
+            <div onclick="nav('logs')" class="nav-item" id="nav-logs"><i class="fas fa-list-ul"></i> 审计日志</div>
         </div>
 
         <div class="root-only">
-            <div class="px-3 mt-4 mb-2"><small class="text-uppercase text-muted fw-bold" style="font-size:0.7rem">Governance</small></div>
+            <div class="nav-section-label">Governance</div>
             <div onclick="nav('admin')" class="nav-item" id="nav-admin"><i class="fas fa-layer-group"></i> 资产上架</div>
             <div onclick="nav('gov')" class="nav-item" id="nav-gov"><i class="fas fa-building-columns"></i> 机构监管</div>
         </div>
     </nav>
 
+    <!-- 主内容 -->
     <div class="main-content">
-        <header class="top-bar">
-            <div><h4 class="m-0 fw-bold text-dark">资产交易平台</h4><small class="text-muted" id="net-status">RPC Online</small></div>
-            <div class="d-flex align-items-center gap-3">
-                <div id="id-badge" class="d-none px-3 py-2 rounded-3 bg-success bg-opacity-10 text-success border border-success fw-bold small">已认证</div>
-                <div class="px-3 py-2 rounded-3 bg-primary bg-opacity-10 text-primary border border-primary fw-bold small">
-                    <i class="fas fa-coins me-2"></i><span id="hkc-bal">-</span> HKC
-                </div>
-                <button onclick="connectWallet()" id="btn-conn" class="btn btn-primary rounded-pill px-4 fw-bold">连接钱包</button>
-                <span id="wallet-addr" class="text-muted small fw-bold font-monospace d-none bg-white px-2 py-1 rounded border"></span>
+        
+        <!-- 顶部 -->
+        <div class="top-bar">
+            <div class="page-title">
+                <h2 id="page-header-title">交易市场</h2>
+                <p>基于区块链的去中心化实物资产交易平台。</p>
             </div>
-        </header>
+            <div class="user-bar">
+                <div class="d-flex align-items-center gap-2 text-success fw-bold" style="font-size:0.8rem">
+                    <i class="fas fa-circle" style="font-size:8px"></i> RPC Online
+                </div>
+                <div class="balance-badge"><span id="hkc-bal">0.00</span> HKC</div>
+                <button onclick="connectWallet()" id="btn-conn" class="btn btn-primary-custom btn-sm">连接钱包</button>
+                <div id="wallet-badge" class="wallet-badge d-none">0x...</div>
+            </div>
+        </div>
 
         <!-- 1. 市场 (Market) -->
         <div id="view-market" class="view-section active">
-            <div class="d-flex justify-content-between mb-4">
-                <p class="text-muted m-0 align-self-center">浏览全球合规 RWA 资产。</p>
-                <button class="btn btn-dark btn-sm fw-bold px-3" onclick="approveHKC()"><i class="fas fa-key me-2"></i> 资金授权</button>
+            <div class="d-flex justify-content-end mb-4">
+                <button class="btn-outline" onclick="approveHKC()"><i class="fas fa-key me-2"></i> 资金授权 (Approve)</button>
             </div>
             <div class="row g-4" id="market-grid">
-                <div class="col-12 text-center py-5 text-muted"><div class="spinner-border text-primary mb-2"></div><p>Loading Assets...</p></div>
+                <div class="col-12 text-center py-5 text-muted">
+                    <div class="spinner-border text-primary mb-2"></div>
+                    <p>Loading Assets...</p>
+                </div>
             </div>
         </div>
 
@@ -133,103 +78,126 @@
         <div id="view-profile" class="view-section">
             <div class="row mb-5">
                 <div class="col-md-8">
-                    <div class="card-modern bg-primary text-white border-0" style="background: linear-gradient(120deg, #2563eb 0%, #1e40af 100%);">
+                    <div class="card-box bg-primary text-white border-0" style="background:linear-gradient(135deg, #2563eb, #1e40af)">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <span class="badge bg-white bg-opacity-25 mb-2">DID 数字身份</span>
+                                <span class="badge bg-grey bg-opacity-20 mb-2">数字身份 (DID)</span>
                                 <h2 class="fw-bold mb-1" id="my-role-display">未连接</h2>
-                                <div class="mt-3 d-flex gap-2">
-                                    <span class="badge bg-white text-primary" id="my-region-display">-</span>
-                                    <span class="badge bg-white bg-opacity-25" id="my-org-display">-</span>
-                                </div>
+                                <div class="mt-3 opacity-75" id="my-org-display">请连接钱包查看详情</div>
                             </div>
-                            <i class="fas fa-id-card fa-5x opacity-25"></i>
+                            <i class="fas fa-id-card fa-5x opacity-20"></i>
                         </div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card-modern h-100 d-flex flex-column justify-content-center align-items-center text-center">
-                        <h6 class="text-muted text-uppercase fw-bold small mb-2">持有资产总数</h6>
+                    <div class="card-box h-100 d-flex flex-column justify-content-center align-items-center">
+                        <h6 class="text-uppercase text-muted fw-bold small">持有资产总数</h6>
                         <h1 class="fw-bold text-dark m-0" id="my-asset-count">0</h1>
                     </div>
                 </div>
             </div>
-            <h5 class="fw-bold text-dark mb-4">📦 我的持仓 (Inventory)</h5>
-            <div class="row g-4" id="inventory-grid"><div class="col-12 text-center py-5 text-muted">暂无持仓</div></div>
+            <h5 class="fw-bold mb-4">📦 我的持仓 (Inventory)</h5>
+            <div class="row g-4" id="inventory-grid">
+                <div class="col-12 text-center py-5 text-muted">暂无持仓</div>
+            </div>
         </div>
 
-        <!-- 3. 发证 (Issuer) - 智能切换 Root/Admin -->
+        <!-- 3. 发证 (Issuer - MultiSig/Root) -->
         <div id="view-issuer" class="view-section">
             <div class="row g-4">
                 <div class="col-md-5">
-                    <div class="card-modern border-top border-4 border-warning">
-                        <h5 class="fw-bold text-warning mb-4" id="issue-card-title">发证操作</h5>
-                        <p class="small text-muted" id="issue-desc">正在检测权限...</p>
-                        
-                        <div class="d-flex gap-2 mb-2">
-                            <input id="targetUser" class="form-control" placeholder="用户地址 (0x...)">
-                            <button class="btn btn-outline-secondary btn-sm" onclick="fillMyAddress()">填自己</button>
+                    <div class="card-box" style="border-top:4px solid #f59e0b">
+                        <div class="card-header-flex">
+                            <h5 class="card-label text-warning" id="issue-title">发证操作</h5>
                         </div>
+                        <p class="text-muted small mb-3" id="issue-desc">正在检测您的权限...</p>
                         
-                        <div class="row mb-3">
+                        <div class="input-group mb-3">
+                            <input id="targetUser" class="form-control" placeholder="目标用户地址 (0x...)">
+                            <button class="btn btn-outline-secondary" type="button" onclick="fillMyAddress()">填自己</button>
+                        </div>
+
+                        <div class="row g-2 mb-4">
                             <div class="col"><select id="targetRegion" class="form-select"><option value="HK">HK 香港</option><option value="US">US 美国</option></select></div>
                             <div class="col"><select id="targetRole" class="form-select"><option value="Student">Student</option><option value="Investor">Investor</option></select></div>
                         </div>
-                        
                         <div id="issue-btn-area"><button class="btn btn-secondary w-100" disabled>请连接钱包</button></div>
                     </div>
                 </div>
                 <div class="col-md-7">
-                    <div class="card-modern">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h5 class="fw-bold m-0">待审批列表 (Checker)</h5>
-                            <button onclick="loadProposals()" class="btn btn-sm btn-light border"><i class="fas fa-sync"></i></button>
+                    <div class="card-box">
+                        <div class="card-header-flex">
+                            <h5 class="card-label">待审批列表 (Checker)</h5>
+                            <button class="btn btn-sm btn-outline" onclick="loadProposals()"><i class="fas fa-sync"></i></button>
                         </div>
-                        <table class="table table-hover"><tbody id="proposal-table"></tbody></table>
+                        <table class="table-clean">
+                            <thead><tr><th>ID</th><th>用户</th><th>角色</th><th>发起人</th><th>操作</th></tr></thead>
+                            <tbody id="proposal-table"><tr><td colspan="5" class="text-center text-muted">无待办事项</td></tr></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 4. Admin -->
+        <!-- 4. 资产管理 (Root Only) -->
         <div id="view-admin" class="view-section">
-            <div class="card-modern">
-                <h5 class="fw-bold text-success mb-4">上架新资产</h5>
-                <div class="row g-2">
-                    <div class="col-5"><input id="newAssetName" class="form-control" placeholder="名称"></div>
-                    <div class="col-3"><input id="newAssetPrice" class="form-control" placeholder="价格"></div>
-                    <div class="col-2"><select id="newAssetRegion" class="form-select"><option value="">🌐 Global</option><option value="HK">HK Only</option></select></div>
-                    <div class="col-2"><button onclick="addAsset()" class="btn btn-success w-100 fw-bold">上架</button></div>
+            <div class="card-box">
+                <h5 class="card-label mb-4 text-success">上架新资产</h5>
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label class="small fw-bold text-muted">名称</label>
+                        <input id="newAssetName" class="form-control" placeholder="e.g. Tokenized Gold">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="small fw-bold text-muted">价格 (HKC)</label>
+                        <input id="newAssetPrice" type="number" class="form-control" placeholder="100">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="small fw-bold text-muted">地区限制</label>
+                        <select id="newAssetRegion" class="form-select"><option value="">Global</option><option value="HK">HK Only</option></select>
+                    </div>
+                    <div class="col-md-2"><button onclick="addAsset()" class="btn btn-primary-custom w-100">上架</button></div>
                 </div>
-                <hr class="opacity-25 my-4">
-                <h5 class="fw-bold mb-3">现存资产列表</h5>
-                <table class="table table-hover align-middle"><tbody id="admin-table"></tbody></table>
+            </div>
+            <div class="card-box">
+                <h5 class="card-label mb-4">现存资产列表</h5>
+                <table class="table-clean">
+                    <thead><tr><th>ID</th><th>名称</th><th>价格</th><th>状态</th><th>操作</th></tr></thead>
+                    <tbody id="admin-table"></tbody>
+                </table>
             </div>
         </div>
 
-        <!-- 5. Gov -->
+        <!-- 5. 监管 (Root Only) -->
         <div id="view-gov" class="view-section">
             <div class="row g-4">
                 <div class="col-md-5">
-                    <div class="card-modern border-top border-4 border-danger">
-                        <h5 class="fw-bold text-danger mb-4">机构授权</h5>
-                        <input id="issuerAddr" class="form-control mb-3" placeholder="机构地址 (0x...)">
-                        <input id="issuerName" class="form-control mb-3" placeholder="机构名称 (e.g. HKUST)">
-                        <div class="d-flex gap-2 mb-4">
-                            <button onclick="govAdd()" class="btn btn-danger w-100 fw-bold">授权</button>
-                            <button onclick="govRevoke()" class="btn btn-outline-danger w-100 fw-bold">吊销</button>
+                    <div class="card-box" style="border-top:4px solid #ef4444">
+                        <h5 class="card-label text-danger mb-4">机构监管 & 授权</h5>
+                        <div class="mb-3">
+                            <label class="small fw-bold text-muted">添加机构</label>
+                            <div class="input-group mt-1">
+                                <input id="issuerAddr" class="form-control" placeholder="机构地址">
+                                <input id="issuerName" class="form-control" placeholder="名称">
+                            </div>
+                            <div class="d-flex gap-2 mt-2">
+                                <button onclick="govAdd()" class="btn btn-outline w-50 text-success fw-bold">授权</button>
+                                <button onclick="govRevoke()" class="btn btn-outline w-50 text-danger fw-bold">吊销</button>
+                            </div>
                         </div>
                         <hr>
-                        <h6 class="fw-bold text-primary mb-3">绑定管理员 (Admin Binding)</h6>
-                        <input id="adminAddr" class="form-control mb-2" placeholder="管理员地址">
-                        <input id="bindOrgAddr" class="form-control mb-2" placeholder="所属机构地址">
-                        <button onclick="govAddAdmin()" class="btn btn-primary w-100">绑定</button>
+                        <div class="mb-2">
+                            <label class="small fw-bold text-muted">绑定管理员</label>
+                            <input id="adminAddr" class="form-control mt-1 mb-2" placeholder="管理员地址">
+                            <input id="bindOrgAddr" class="form-control mb-2" placeholder="所属机构地址">
+                            <button onclick="govAddAdmin()" class="btn btn-primary-custom w-100">绑定 (Add Admin)</button>
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-7">
-                    <div class="card-modern">
-                        <h5 class="fw-bold mb-4">已授权机构</h5>
-                        <table class="table table-hover"><tbody id="issuer-list-tbody"></tbody></table>
+                    <div class="card-box">
+                        <h5 class="card-label mb-4">已授权机构</h5>
+                        <table class="table-clean"><tbody id="issuer-list-tbody"></tbody></table>
                     </div>
                 </div>
             </div>
@@ -237,21 +205,26 @@
         
         <!-- 6. Logs -->
         <div id="view-logs" class="view-section">
-            <div class="card-modern"><h5 class="fw-bold mb-4">审计日志</h5><table class="table table-striped"><tbody id="logs-table"></tbody></table></div>
+            <div class="card-box">
+                <h5 class="card-label mb-4">系统审计日志</h5>
+                <table class="table-clean">
+                    <thead><tr><th>Type</th><th>Detail</th><th>TxHash</th></tr></thead>
+                    <tbody id="logs-table"></tbody>
+                </table>
+            </div>
         </div>
 
     </div>
 
     <script>
-        // ==================== ⚙️ 配置区 ====================
-        const ADDR_HKC    = "填入HKC地址";
-        const ADDR_ID     = "填入身份合约地址";
-        const ADDR_MARKET = "填入市场合约地址";
+        // ==================== ⚠️ 填入 SystemV9/V14 合约地址 ====================
+        const ADDR_HKC      = "0xd52dC3Bd38Ce3Bc0C4A8e9D0da559F68D2aeD998";
+        const ADDR_ID       = "0x9D22783ae7b6E933173fc341cdc1E4E5da3BF3A4";
+        const ADDR_MARKET   = "0xDd9B33cA55aB5DA06094cb649267CD9690af0005";
         
-        const RPC_NODES = ["https://ethereum-sepolia.publicnode.com", "https://sepolia.drpc.org", "https://rpc.sepolia.org"];
-        // ==================================================
+        const RPC_URL     = "https://ethereum-sepolia.publicnode.com"; 
+        // ======================================================================
 
-        // 完整 ABI (包含 rootIssue, proposeIdentity, getAdminOrg)
         const ABI_ID = ["function rootIssue(address,string,string,uint256) external", "function proposeIdentity(address,string,string,uint256) external", "function approveIdentity(uint256) external", "function owner() view returns (address)", "function proposalCount() view returns (uint256)", "function getProposal(uint256) view returns (tuple(uint256 id, address targetUser, string region, string role, uint256 validityDays, address proposer, bool executed))", "function identities(address) view returns (address issuedBy, string region, string role, uint256 expiry, bool isValid)", "function issuers(address) view returns (bool isActive, string name)", "function getAllIssuers() view returns (address[])", "function addIssuer(address,string) external", "function revokeIssuer(address) external", "function addAdmin(address,address) external", "function getAdminOrg(address) view returns (address)"];
         const ABI_MKT = ["function addAsset(string,uint256,string,address) external", "function buyAsset(uint256) external", "function sellAsset(uint256) external", "function userBalances(address,uint256) view returns (uint256)", "function assetCount() view returns (uint256)", "function assets(uint256) view returns (string name, uint256 price, string requiredRegion, address requiredIssuer, bool isActive)", "function setAssetStatus(uint256, bool) external", "event TradeExecuted(address,string,uint256,string,uint256,uint256)"];
         const ABI_HKC = ["function approve(address,uint256) external", "function balanceOf(address) view returns (uint256)"];
@@ -259,17 +232,11 @@
         let signer, myAddr, cID, cMKT, cHKC, provider;
 
         window.onload = async () => {
-            for(let url of RPC_NODES) {
-                try {
-                    provider = new ethers.providers.JsonRpcProvider(url);
-                    await provider.getBlockNumber();
-                    console.log("RPC Connected:", url);
-                    initContracts(provider);
-                    loadAssets(); 
-                    document.getElementById("net-status").innerText = "RPC Online";
-                    return;
-                } catch(e){}
-            }
+            try {
+                provider = new ethers.providers.JsonRpcProvider(RPC_URL);
+                initContracts(provider);
+                loadAssets();
+            } catch(e){}
         };
 
         function initContracts(p) {
@@ -279,87 +246,101 @@
         }
 
         async function connectWallet() {
-            if(!window.ethereum) return Swal.fire("Error", "MetaMask?", "error");
-            const p = new ethers.providers.Web3Provider(window.ethereum);
-            await p.send("eth_requestAccounts", []);
-            signer = p.getSigner();
-            myAddr = await signer.getAddress();
-            
-            document.getElementById("btn-conn").style.display="none";
-            document.getElementById("wallet-addr").classList.remove("d-none");
-            document.getElementById("wallet-addr").innerText = myAddr.slice(0,6)+"...";
-            document.getElementById("id-badge").classList.remove("d-none");
-            
-            initContracts(signer);
-            await checkPermission();
-            refreshAll();
+            if(!window.ethereum) return Swal.fire("Error", "Please Install MetaMask", "error");
+            try {
+                const p = new ethers.providers.Web3Provider(window.ethereum);
+                await p.send("eth_requestAccounts", []);
+                signer = p.getSigner();
+                myAddr = await signer.getAddress();
+                
+                document.getElementById("btn-conn").style.display="none";
+                document.getElementById("wallet-badge").innerText = myAddr.slice(0,6)+"...";
+                document.getElementById("wallet-badge").classList.remove("d-none");
+                
+                initContracts(signer);
+                await checkRole(); 
+                refreshAll();
+            } catch(e) { console.error(e); }
         }
 
-        function refreshAll() { loadAssets(); if(signer) { loadUserData(); loadProposals(); loadIssuerList(); loadLogs(); } }
+        function fillMyAddress() { document.getElementById("targetUser").value = myAddr; }
 
-        async function checkPermission() {
+        async function checkRole() {
+            const area = document.getElementById("issue-btn-area");
+            const title = document.getElementById("issue-title");
+            const desc = document.getElementById("issue-desc");
+
             try {
                 const owner = await cID.owner();
-                const area = document.getElementById("issue-btn-area");
                 
+                // Root 判断
                 if(owner.toLowerCase() === myAddr.toLowerCase()) {
-                    document.getElementById("my-role-display").innerText = "Root Owner";
+                    document.getElementById("my-role-display").innerText = "Root Admin";
+                    document.getElementById("my-org-display").innerText = "System Owner";
                     document.querySelectorAll(".root-only, .admin-only").forEach(e=>e.style.setProperty("display","block","important"));
-                    document.getElementById("issue-card-title").innerHTML = "<span class='text-danger'>🚀 Root 极速发证</span>";
-                    document.getElementById("issue-desc").innerText = "无需审核，直接发证。";
-                    area.innerHTML = `<button onclick="rootIssue()" class="btn btn-danger w-100 fw-bold">立即发证 (Root)</button>`;
+                    
+                    title.innerHTML = "<span class='text-danger'>🚀 Root 极速发证</span>";
+                    desc.innerText = "无需审核，直接发证。";
+                    area.innerHTML = `<button onclick="rootIssue()" class="btn-primary-custom w-100" style="background:#dc2626">立即发证 (Root)</button>`;
                     return;
                 }
 
+                // Admin 判断
                 const orgAddr = await cID.getAdminOrg(myAddr);
                 if(orgAddr !== "0x0000000000000000000000000000000000000000") {
                     const orgInfo = await cID.issuers(orgAddr);
                     document.getElementById("my-role-display").innerText = "Admin";
                     document.getElementById("my-org-display").innerText = orgInfo.name;
                     document.querySelectorAll(".admin-only").forEach(e=>e.style.setProperty("display","block","important"));
-                    document.getElementById("issue-card-title").innerText = "发起提案 (Maker)";
-                    area.innerHTML = `<button onclick="proposeID()" class="btn btn-warning w-100 fw-bold">发起提案</button>`;
+                    
+                    title.innerText = "发起提案 (Maker)";
+                    desc.innerText = "需复核。";
+                    area.innerHTML = `<button onclick="proposeID()" class="btn-primary-custom w-100" style="background:#f59e0b">发起提案</button>`;
                     return;
                 }
-                
+
+                // User 判断
                 const id = await cID.identities(myAddr);
                 if(id.isValid) {
                     document.getElementById("my-role-display").innerText = id.role;
                     document.getElementById("my-org-display").innerText = "Region: "+id.region;
+                } else {
+                    document.getElementById("my-role-display").innerText = "无有效身份";
                 }
-            } catch(e) { console.log(e); }
+                document.querySelectorAll(".admin-only, .root-only").forEach(e=>e.style.setProperty("display","none","important"));
+
+            } catch(e) { console.warn(e); }
         }
 
-        async function ensureSigner() {
-            if(signer) return true;
-            await connectWallet();
-            return !!signer;
-        }
-
+        async function ensureSigner() { if(signer) return true; await connectWallet(); return !!signer; }
         async function tx(p, msg) {
             if(!await ensureSigner()) return;
             try {
-                Swal.fire({title:'确认交易...', didOpen:()=>Swal.showLoading()});
+                Swal.fire({title:'确认...', didOpen:()=>Swal.showLoading()});
                 const t = await p;
                 Swal.fire({title:'上链中...', didOpen:()=>Swal.showLoading()});
                 await t.wait();
                 Swal.fire("成功", msg, "success");
                 refreshAll();
-            } catch(e) { Swal.fire("错误", e.reason||e.message, "error"); }
+            } catch(e) { 
+                let err = e.reason || e.message;
+                if(err.includes("Identity Invalid")) err = "购买失败：你没有有效身份（请去发证页面）";
+                Swal.fire("错误", err, "error"); 
+            }
         }
+
+        function refreshAll() { loadAssets(); if(signer) { loadUserData(); loadProposals(); loadIssuerList(); loadLogs(); } }
 
         // Actions
         function rootIssue() { 
-            const u=document.getElementById("targetUser").value, r=document.getElementById("targetRegion").value, role=document.getElementById("targetRole").value;
-            if(!u) return Swal.fire("提示","请输入用户地址","warning");
+            const u=document.getElementById("targetUser").value || myAddr;
+            const r=document.getElementById("targetRegion").value, role=document.getElementById("targetRole").value;
             tx(cID.connect(signer).rootIssue(u,r,role,365), "Root发证成功");
         }
         function proposeID() { 
             const u=document.getElementById("targetUser").value, r=document.getElementById("targetRegion").value, role=document.getElementById("targetRole").value;
-            tx(cID.connect(signer).proposeIdentity(u,r,role,365), "提案已提交");
+            tx(cID.connect(signer).proposeIdentity(u,r,role,365), "提案提交");
         }
-        
-        function fillMyAddress() { document.getElementById("targetUser").value = myAddr; }
         
         function approveHKC() { tx(cHKC.connect(signer).approve(ADDR_MARKET, ethers.constants.MaxUint256), "授权成功"); }
         function buy(id) { tx(cMKT.connect(signer).buyAsset(id), "购买成功"); }
@@ -376,28 +357,36 @@
             if(!cMKT) return; g.innerHTML=""; t.innerHTML="";
             try {
                 const c = await cMKT.assetCount();
+                if(c.toNumber()===0) g.innerHTML="<div class='col-12 text-center text-muted py-5'>暂无资产</div>";
                 for(let i=1; i<=c; i++) {
                     const a = await cMKT.assets(i);
+                    // 组装 HTML 字符串
+                    let statusBadge = a.isActive ? '<span class="badge bg-success bg-opacity-10 text-success">Active</span>' : '<span class="badge bg-danger bg-opacity-10 text-danger">Inactive</span>';
+                    let btnBuy = a.isActive ? `<button onclick="buy(${i})" class="btn btn-sm btn-primary-custom">购买</button>` : `<button disabled class="btn btn-sm btn-secondary">下架</button>`;
+                    
+                    // Market View
                     if(a.isActive) {
                         const hue = (i*137)%360;
-                        g.innerHTML+=`
+                        g.innerHTML += `
                         <div class="col-md-4 mb-4">
                             <div class="asset-card">
-                                <div class="asset-img" style="background:linear-gradient(135deg, hsl(${hue},70%,90%), hsl(${hue},70%,80%)); color:hsl(${hue},60%,40%)">
-                                    ${a.name.substring(0,2).toUpperCase()}
-                                    <span class="asset-badge">${a.requiredRegion||'GLOBAL'}</span>
+                                <div class="asset-visual">
+                                    <i class="fas fa-cube asset-icon-lg"></i>
+                                    <span class="asset-tag">${a.requiredRegion||'GLOBAL'}</span>
                                 </div>
-                                <div class="asset-body">
-                                    <h5 class="asset-title">${a.name}</h5>
-                                    <div class="d-flex justify-content-between align-items-end mt-3">
-                                        <span class="asset-price">${a.price} <small>HKC</small></span>
-                                        <button class="btn-action btn-buy" style="width:auto; margin:0" onclick="buy(${i})">购买</button>
+                                <div class="asset-content">
+                                    <div class="asset-title">${a.name}</div>
+                                    <div class="asset-id">ID: #${i}</div>
+                                    <div class="asset-price-row">
+                                        <div class="price-val">${a.price} <span class="price-unit">HKC</span></div>
+                                        ${btnBuy}
                                     </div>
                                 </div>
                             </div>
                         </div>`;
                     }
-                    t.innerHTML+=`<tr><td>${i}</td><td>${a.name}</td><td>${a.price}</td><td>${a.isActive?'✅':'❌'}</td><td><button onclick="toggle(${i},${!a.isActive})" class="btn btn-sm btn-light border">Toggle</button></td></tr>`;
+                    // Admin View
+                    t.innerHTML+=`<tr><td>${i}</td><td><strong>${a.name}</strong></td><td>${a.price} HKC</td><td>${statusBadge}</td><td><button onclick="toggle(${i},${!a.isActive})" class="btn btn-sm btn-outline">Toggle</button></td></tr>`;
                 }
             } catch(e){}
         }
@@ -407,25 +396,18 @@
             const bal = await cHKC.balanceOf(myAddr);
             document.getElementById("hkc-bal").innerText = ethers.utils.formatUnits(bal, 18).split('.')[0];
             
-            const id = await cID.identities(myAddr);
-            if(id.isValid) {
-                document.getElementById("my-role-display").innerText = id.role;
-                document.getElementById("my-org-display").innerText = "Region: "+id.region;
-            } else {
-                document.getElementById("my-role-display").innerText = "无有效身份";
-            }
-
             const g = document.getElementById("inventory-grid"); g.innerHTML="";
             const c = await cMKT.assetCount();
-            let has=false;
+            let has=false, count=0;
             for(let i=1; i<=c; i++) {
                 const b = await cMKT.userBalances(myAddr, i);
                 if(b.gt(0)) {
-                    has=true; const a = await cMKT.assets(i);
-                    g.innerHTML+=`<div class="col-md-3"><div class="card-modern text-center p-3"><h6>${a.name}</h6><span class="badge bg-success mb-2">持有: ${b}</span><button onclick="sell(${i},'${a.name}',${a.price})" class="btn-action btn-sell mt-2">卖出变现</button></div></div>`;
+                    has=true; count+=b.toNumber(); const a = await cMKT.assets(i);
+                    g.innerHTML+=`<div class="col-md-4"><div class="card-box text-center" style="border:1px solid var(--success);"><h5 class="fw-bold text-success">${a.name}</h5><span class="badge bg-success mb-3">持有: ${b}</span><button onclick="sell(${i},'${a.name}',${a.price})" class="btn btn-outline-danger w-100 btn-sm fw-bold">卖出变现</button></div></div>`;
                 }
             }
             if(!has) g.innerHTML="<div class='col-12 text-center text-muted py-5'>暂无持仓</div>";
+            document.getElementById("my-asset-count").innerText = count;
         }
 
         async function loadProposals() {
@@ -434,7 +416,7 @@
                 const c = await cID.proposalCount();
                 for(let i=c; i>Math.max(0,c-5); i--) {
                     const p = await cID.getProposal(i);
-                    if(!p.executed) t.innerHTML+=`<tr><td>#${p.id}</td><td>${p.targetUser.slice(0,6)}...</td><td><span class="badge bg-info text-dark">${p.role}</span></td><td><button onclick="approveID(${p.id})" class="btn btn-sm btn-primary-custom">批准</button></td></tr>`;
+                    if(!p.executed) t.innerHTML+=`<tr><td>#${p.id}</td><td>${p.targetUser.slice(0,6)}...</td><td>${p.role}</td><td>${p.proposer.slice(0,6)}...</td><td><button onclick="approveID(${p.id})" class="btn btn-sm btn-primary-custom">批准</button></td></tr>`;
                 }
             } catch(e){}
         }
@@ -449,15 +431,16 @@
 
         async function loadLogs() {
             const t=document.getElementById("logs-table"); t.innerHTML="";
-            const l=await cMKT.queryFilter("TradeExecuted", -5000);
+            const l=await cMKT.queryFilter("TradeExecuted", -2000);
             for(let i=l.length-1; i>=0; i--) {
-                const e=l[i]; t.innerHTML+=`<tr><td><span class="badge bg-primary">${e.args.type_}</span></td><td>用户 ${e.args.user.slice(0,6)} 操作了 ${e.args.assetName}</td><td><a href="https://sepolia.etherscan.io/tx/${e.transactionHash}" target="_blank" class="text-decoration-none">View</a></td></tr>`;
+                const e=l[i]; t.innerHTML+=`<tr><td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary">${e.args.type_}</span></td><td>用户 ${e.args.user.slice(0,6)} 操作了 <strong>${e.args.assetName}</strong></td><td><a href="https://sepolia.etherscan.io/tx/${e.transactionHash}" target="_blank" class="text-decoration-none">View</a></td></tr>`;
             }
         }
 
         function nav(p) {
             document.querySelectorAll('.view-section').forEach(e=>e.classList.remove('active')); document.getElementById('view-'+p).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); document.getElementById('nav-'+p).classList.add('active');
+            document.getElementById('page-header-title').innerText = {market:'交易市场',profile:'我的资产',issuer:'发证管理',admin:'资产管理',gov:'机构监管',logs:'审计日志'}[p];
             if(signer) refreshAll();
         }
     </script>
