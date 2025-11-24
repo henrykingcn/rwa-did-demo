@@ -145,9 +145,9 @@
 
 <script>
     // ==================== ⚠️ 填入 V9.Final 地址 ====================
-    const ADDR_HKC      = "0x93E9aDd27FA2D73645954e3dE6fe0D82D640658c";
-    const ADDR_ID       = "0xDE8A30dBDF83CE5C96017C433A984609B9dC10B8";
-    const ADDR_MARKET   = "0x6c5529aA37A5B678B0fb573d0aC8Aa527F26A1F7";
+        const ADDR_HKC      = "0xd52dC3Bd38Ce3Bc0C4A8e9D0da559F68D2aeD998";
+        const ADDR_ID       = "0x9D22783ae7b6E933173fc341cdc1E4E5da3BF3A4";
+        const ADDR_MARKET   = "0xDd9B33cA55aB5DA06094cb649267CD9690af0005";
     const RPC_URL     = "https://ethereum-sepolia.publicnode.com";
 
     const ABI_ID = ["function rootIssue(address,string,string,uint256) external", "function proposeIdentity(address,string,string,uint256) external", "function approveIdentity(uint256) external", "function proposalCount() view returns (uint256)", "function getProposal(uint256) view returns (tuple(uint256 id, address targetUser, string region, string role, uint256 validityDays, address proposer, bool executed))", "function identities(address) view returns (address issuedBy, string region, string role, uint256 expiry, bool isValid)", "function issuers(address) view returns (bool isActive, string name)", "function getAllIssuers() view returns (address[])", "function addIssuer(address,string) external", "function revokeIssuer(address) external", "function addAdmin(address,address) external", "function getAdminOrg(address) view returns (address)", "function owner() view returns (address)"];
