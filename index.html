@@ -2,13 +2,79 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>HKUST RWA Exchange</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <link rel="stylesheet" href="styles.css">
+
+    <style>
+        /* 默认隐藏汉堡按钮 */
+        #mobile-menu-btn { display: none; }
+
+        /* 手机屏幕适配 (小于 768px) */
+        @media (max-width: 768px) {
+            /* 侧边栏平时隐藏 */
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                z-index: 9999;
+                width: 260px;
+                position: fixed;
+                height: 100%;
+            }
+            /* 激活时滑出 */
+            .sidebar.active {
+                transform: translateX(0);
+                box-shadow: 10px 0 20px rgba(0,0,0,0.2);
+            }
+
+            /* 主内容全宽 */
+            .main-content {
+                margin-left: 0 !important;
+                width: 100%;
+                padding: 15px;
+            }
+
+            /* 显示汉堡按钮 */
+            #mobile-menu-btn {
+                display: inline-block;
+                margin-right: 10px;
+                font-size: 1.4rem;
+                color: #333;
+                background: none;
+                border: none;
+                padding: 0;
+                cursor: pointer;
+            }
+
+            /* 顶部布局调整 */
+            .top-bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .user-bar {
+                width: 100%;
+                justify-content: space-between;
+                margin-top: 5px;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            /* 表格横向滚动，防止撑爆 */
+            .card-box { overflow-x: auto; }
+            .table-clean { min-width: 600px; }
+            
+            /* 弹窗边距 */
+            .modal-dialog { margin: 10px; }
+        }
+    </style>
 </head>
 <body>
 
@@ -17,20 +83,20 @@
             <div class="brand-icon"><i class="fas fa-cube"></i></div>
             <div class="brand-text">
                 <h4>RWA.Fi</h4>
-                <small>HKUST Demo</small>
+                <small>System V22 Mobile</small>
             </div>
         </div>
         
         <div class="nav-section-label">Marketplace</div>
         <div onclick="nav('market')" class="nav-item active" id="nav-market"><i class="fas fa-store"></i> 交易市场</div>
-        <div onclick="nav('profile')" class="nav-item" id="nav-profile"><i class="fas fa-wallet"></i> 我的资产 (Sell)</div>
+        <div onclick="nav('profile')" class="nav-item" id="nav-profile"><i class="fas fa-wallet"></i> 我的资产</div>
         <div onclick="nav('logs')" class="nav-item" id="nav-logs"><i class="fas fa-list-ul"></i> 审计日志</div>
 
         <div class="admin-only" style="display:none;">
             <div class="nav-section-label">Admin Console</div>
-            <div onclick="nav('issuer')" class="nav-item" id="nav-issuer"><i class="fas fa-stamp"></i> 发证管理 (Maker)</div>
+            <div onclick="nav('issuer')" class="nav-item" id="nav-issuer"><i class="fas fa-stamp"></i> 发证管理</div>
             <div onclick="nav('admin')" class="nav-item" id="nav-admin"><i class="fas fa-layer-group"></i> 资产管理</div>
-            <div onclick="nav('userlist')" class="nav-item" id="nav-userlist"><i class="fas fa-users"></i> 已发证用户</div>
+            <div onclick="nav('userlist')" class="nav-item" id="nav-userlist"><i class="fas fa-users"></i> 用户列表</div>
         </div>
 
         <div class="admin-only" style="display:none;">
@@ -42,8 +108,13 @@
     <div class="main-content">
         <div class="top-bar">
             <div class="page-title">
-                <h2 id="page-header-title">交易市场</h2>
-                <p>基于区块链的去中心化实物资产交易平台。</p>
+                <div class="d-flex align-items-center">
+                    <button id="mobile-menu-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                    <div class="ms-2">
+                        <h2 id="page-header-title" class="m-0">交易市场</h2>
+                        <p class="m-0 text-muted small">基于区块链的 RWA 交易平台</p>
+                    </div>
+                </div>
             </div>
             <div class="user-bar">
                 <div class="d-flex align-items-center gap-2 text-success fw-bold" style="font-size:0.8rem">
@@ -56,15 +127,20 @@
         </div>
 
         <div id="view-market" class="view-section active">
-            <div class="d-flex justify-content-end mb-4">
-                <button class="btn-outline" onclick="approveHKC()"><i class="fas fa-key me-2"></i> 资金授权</button>
+            <div class="d-flex justify-content-end mb-4 gap-2 flex-wrap">
+                <button class="btn btn-outline-primary btn-sm" onclick="doApproveIDContract()">
+                    <i class="fas fa-file-signature me-2"></i> 授权 ID (提案用)
+                </button>
+                <button class="btn btn-outline-success btn-sm" onclick="doApproveMarketContract()">
+                    <i class="fas fa-shopping-cart me-2"></i> 授权 Market (交易用)
+                </button>
             </div>
             <div class="row g-4" id="market-grid"></div>
         </div>
 
         <div id="view-profile" class="view-section">
             <div class="row mb-5">
-                <div class="col-md-8">
+                <div class="col-md-8 mb-3">
                     <div class="card-box bg-primary text-white border-0" style="background:linear-gradient(135deg, #2563eb, #1e40af)">
                         <div class="d-flex justify-content-between align-items-start">
                             <div>
@@ -77,7 +153,7 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card-box h-100 d-flex flex-column justify-content-center align-items-center">
+                    <div class="card-box h-100 d-flex flex-column justify-content-center align-items-center py-4">
                         <h6 class="text-uppercase text-muted fw-bold small">持有资产</h6>
                         <h1 class="fw-bold text-dark m-0" id="my-asset-count">-</h1>
                     </div>
@@ -124,24 +200,24 @@
 
         <div id="view-admin" class="view-section">
             <div class="card-box">
-                <h5 class="card-label mb-4 text-success">上架新资产</h5>
+                <h5 class="card-label mb-4 text-success">上架新资产 <small class="text-muted ms-2">(Cost: 200 HKC)</small></h5>
                 <div class="row g-3 align-items-end">
-                    <div class="col-md-5"><label class="small text-muted">名称</label><input id="newAssetName" class="form-control" placeholder="Token Name"></div>
-                    <div class="col-md-3"><label class="small text-muted">价格 (HKC)</label><input id="newAssetPrice" type="number" class="form-control" placeholder="100"></div>
-                    <div class="col-md-2"><label class="small text-muted">限制地区</label>
+                    <div class="col-md-5 mb-2"><label class="small text-muted">名称</label><input id="newAssetName" class="form-control" placeholder="Token Name"></div>
+                    <div class="col-md-3 mb-2"><label class="small text-muted">价格 (HKC)</label><input id="newAssetPrice" type="number" class="form-control" placeholder="100"></div>
+                    <div class="col-md-2 mb-2"><label class="small text-muted">限制地区</label>
                         <select id="newAssetRegion" class="form-select">
                             <option value="">Global</option>
                             <option value="HK">HK Only</option>
                             <option value="US">US Only</option>
                         </select>
                     </div>
-                    <div class="col-md-2"><button onclick="addAsset()" class="btn btn-primary-custom w-100">上架</button></div>
+                    <div class="col-md-2 mb-2"><button onclick="addAsset()" class="btn btn-primary-custom w-100">Pay & List</button></div>
                 </div>
             </div>
             <div class="card-box">
                 <h5 class="card-label mb-4">管理资产列表</h5>
                 <table class="table-clean">
-                    <thead><tr><th>ID</th><th>Name</th><th>Region</th><th>Issuer</th><th>Status</th><th>Action</th></tr></thead>
+                    <thead><tr><th>ID</th><th>Name</th><th>Region</th><th>Status</th><th>Pause</th><th>Action</th></tr></thead>
                     <tbody id="admin-table"></tbody>
                 </table>
             </div>
@@ -151,9 +227,9 @@
             <div class="row g-4">
                 <div class="col-md-5">
                     <div class="card-box root-only mb-4" style="border-top:4px solid #dc2626; display:none;">
-                        <h5 class="card-label text-danger">Root 独裁操作 (God Mode)</h5>
-                        <div class="mb-3">
-                            <label class="small text-muted">强制创建机构</label>
+                        <h5 class="card-label text-danger">Root God Mode (Free)</h5>
+                        <div class="mb-3 border-bottom pb-3">
+                            <label class="small fw-bold text-muted">强制创建/暂停机构</label>
                             <input id="rootIssuerAddr" class="form-control mt-1 mb-2" placeholder="机构地址">
                             <input id="rootIssuerName" class="form-control mb-2" placeholder="名称">
                             <div class="d-flex gap-2 mb-2">
@@ -162,11 +238,21 @@
                                 </select>
                                 <button onclick="rootAddOrg()" class="btn btn-sm btn-danger w-50">Create</button>
                             </div>
+                            <div class="d-flex gap-2">
+                                <button onclick="rootToggle(true)" class="btn btn-sm btn-outline-warning w-50">Pause</button>
+                                <button onclick="rootToggle(false)" class="btn btn-sm btn-outline-success w-50">Resume</button>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="small fw-bold text-muted">强制任命 Admin</label>
+                            <input id="rootAddAdminUser" class="form-control mt-1 mb-2" placeholder="User Address">
+                            <input id="rootAddAdminOrg" class="form-control mb-2" placeholder="Target Org Address">
+                            <button onclick="rootAddAdmin()" class="btn btn-sm btn-danger w-100">Force Add</button>
                         </div>
                     </div>
 
                     <div class="card-box" style="border-top:4px solid #4f46e5">
-                        <h5 class="card-label text-primary">发起治理提案 (MultiSig)</h5>
+                        <h5 class="card-label text-primary">发起治理提案 (MultiSig & Fee)</h5>
                         <ul class="nav nav-tabs mb-3" id="govTab" role="tablist">
                             <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-org">建机构</button></li>
                             <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-admin">任命Admin</button></li>
@@ -174,23 +260,26 @@
                         </ul>
                         <div class="tab-content">
                             <div class="tab-pane fade show active" id="tab-org">
+                                <p class="text-muted small">⚠️ Stake 10,000 HKC</p>
                                 <input id="propOrgAddr" class="form-control mb-2" placeholder="新机构地址">
                                 <input id="propOrgName" class="form-control mb-2" placeholder="机构名称">
                                 <select id="propOrgScope" class="form-select mb-2">
-                                    <option value="HK">HK</option><option value="Global">Global 通用</option><option value="US">US</option><option value="NK">NK (Ban)</option>
+                                    <option value="Global">Global 通用</option><option value="HK">HK</option><option value="US">US</option><option value="NK">NK (Ban)</option>
                                 </select>
-                                <button onclick="proposeGov(2)" class="btn btn-primary-custom w-100">发起提案</button>
+                                <button onclick="proposeGov(2)" class="btn btn-primary-custom w-100">发起 (Pay Stake)</button>
                             </div>
                             <div class="tab-pane fade" id="tab-admin">
+                                <p class="text-muted small">⚠️ Fee 50 HKC</p>
                                 <input id="propAdminAddr" class="form-control mb-2" placeholder="新管理员地址">
                                 <input id="propAdminTargetOrg" class="form-control mb-2" placeholder="目标机构地址 (空=本机构)">
-                                <button onclick="proposeGov(1)" class="btn btn-primary-custom w-100">发起提案</button>
+                                <button onclick="proposeGov(1)" class="btn btn-primary-custom w-100">发起 (Pay Fee)</button>
                             </div>
                             <div class="tab-pane fade" id="tab-pause">
+                                <p class="text-muted small">⚠️ Fee 50 HKC</p>
                                 <input id="propPauseOrgAddr" class="form-control mb-2" placeholder="目标机构地址">
                                 <div class="d-flex gap-2">
-                                    <button onclick="proposeGov(3, 'true')" class="btn btn-warning w-50">暂停 (Pause)</button>
-                                    <button onclick="proposeGov(3, 'false')" class="btn btn-success w-50">恢复 (Resume)</button>
+                                    <button onclick="proposeGov(3, 'true')" class="btn btn-warning w-50">Pause</button>
+                                    <button onclick="proposeGov(3, 'false')" class="btn btn-success w-50">Resume</button>
                                 </div>
                             </div>
                         </div>
@@ -219,7 +308,7 @@
 
         <div id="view-userlist" class="view-section">
             <div class="card-box">
-                <h5 class="card-label mb-4">本机构下发的用户列表</h5>
+                <h5 class="card-label mb-4">本机构下发的用户列表 <small class="text-muted">(Revoke cost: 50 HKC)</small></h5>
                 <p class="text-muted" id="my-org-info-text">正在加载...</p>
                 <table class="table-clean">
                     <thead><tr><th>User Address</th><th>Region</th><th>Role</th><th>Status</th><th>Action</th></tr></thead>
@@ -238,47 +327,77 @@
                 </div>
             </div>
         </div>
+    </div>
 
+    <div class="modal fade" id="txConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold" id="txModalTitle">Confirm Transaction</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="txModalDesc" class="text-muted mb-4">Review the details below:</p>
+                    <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded">
+                        <span class="fw-bold">Cost / Payment</span>
+                        <span class="fw-bold text-danger fs-5" id="txModalCost">-0.00 HKC</span>
+                    </div>
+                    <div id="txModalFeeInfo" class="text-end text-muted small fst-italic mb-3 d-none"></div>
+                    <div id="txModalRewardArea" class="d-none d-flex justify-content-between align-items-center mb-3 p-3 bg-success bg-opacity-10 rounded border border-success">
+                        <span class="fw-bold text-success">Estimated Reward</span>
+                        <span class="fw-bold text-success" id="txModalReward">+0.00 HKC</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary-custom px-4" onclick="executePendingTx()">Confirm & Pay</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // ==================== ⚠️ 填入新部署的地址 ====================
-        const ADDR_HKC      = "0x8EC01edCD7f62A5C7c46e8dE98dDD44aA5778724"; 
-        const ADDR_ID       = "0xF7977155bEEb962BF178c71bB6baC42DB7F166B3"; // 🔥 NEW ID ADDR (SystemV20)
-        const ADDR_MARKET   = "0x2bEc92dCD85e1037681e4B572f729ed0D9255BA5"; // 🔥 NEW MARKET ADDR (SystemV20)
+        // ==================== ⚠️ 填入新部署的 SystemV22 地址 ====================
+        const ADDR_HKC      = "0xf5288BB593820D3B806b9E9DA7CFf8B76e8fAbFB"; 
+        const ADDR_ID       = "0x9A33F52D9dd4cDe609157910738353a3C6BbcA41"; 
+        const ADDR_MARKET   = "0x5C9f8b2026604F14dE24015BcceFA8489A2bF4C9"; 
         const RPC_URL       = "https://ethereum-sepolia.publicnode.com"; 
         // ==========================================================
 
         const ABI_ID = [
             "function rootIssue(address,string,string,uint256) external", 
             "function rootAddIssuer(address,string,string,address) external",
+            "function rootAddAdmin(address,address) external", 
             "function rootToggleIssuerPause(address,bool) external",
-            "function rootRevokeIdentity(address) external", // 🔥 Root Direct
+            "function rootRevokeIdentity(address) external", 
             "function proposeIdentity(address,string,string,uint256) external", 
             "function approveIdentity(uint256) external", 
             "function proposeGovAction(uint8,address,address,string,string) external",
             "function approveGovAction(uint256) external",
+            "function revokeIdentity(address) external",
             "function owner() view returns (address)", 
             "function govProposalCount() view returns (uint256)", 
             "function idProposalCount() view returns (uint256)", 
             "function getGovProposal(uint256) view returns (tuple(uint256 id, uint8 actionType, address targetAddr, address targetOrg, string payloadName, string payloadScope, address proposer, bool executed))", 
             "function getIDProposal(uint256) view returns (tuple(uint256 id, address targetUser, string region, string role, uint256 validityDays, address proposer, bool executed))",
             "function identities(address) view returns (address issuedBy, string region, string role, uint256 expiry, bool isValid)", 
-            "function issuers(address) view returns (bool isActive, bool isPaused, string name, string scope, address parent)", 
+            "function issuers(address) view returns (bool isActive, bool isPaused, string name, string scope, address parent, uint256 stakedAmount)", 
             "function getAllIssuers() view returns (address[])", 
             "function getOrgUsers(address) view returns (address[])",
             "function adminOrg(address) view returns (address)",
             "function checkCompliance(address,string,address) view returns (bool, string)"
         ];
 
-        const ABI_MKT = ["function addAsset(string,uint256,string,address) external", "function buyAsset(uint256) external", "function sellAsset(uint256) external", "function userBalances(address,uint256) view returns (uint256)", "function assetCount() view returns (uint256)", "function assets(uint256) view returns (string name, uint256 price, string requiredRegion, address requiredIssuer, bool isActive)", "function setAssetStatus(uint256, bool) external", "function paymentToken() view returns (address)"];
+        const ABI_MKT = ["function addAsset(string,uint256,string,address) external", "function buyAsset(uint256) external", "function sellAsset(uint256) external", "function userBalances(address,uint256) view returns (uint256)", "function assetCount() view returns (uint256)", "function assets(uint256) view returns (string name, uint256 price, string requiredRegion, address requiredIssuer, bool isActive, bool isPaused)", "function setAssetStatus(uint256, bool) external", "function setAssetPause(uint256, bool) external"];
         const ABI_HKC = ["function approve(address,uint256) external", "function balanceOf(address) view returns (uint256)"];
 
         let signer, myAddr, cID, cMKT, cHKC;
         let myOrgAddr = ethers.constants.AddressZero;
         let isRoot = false;
+        let pendingTxCallback = null;
+        let confirmModal = null;
 
         window.onload = async () => {
             document.getElementById("link-hkc").href = `https://sepolia.etherscan.io/address/${ADDR_HKC}`;
@@ -286,8 +405,44 @@
             document.getElementById("link-mkt").href = `https://sepolia.etherscan.io/address/${ADDR_MARKET}`;
             const p = new ethers.providers.JsonRpcProvider(RPC_URL);
             cMKT = new ethers.Contract(ADDR_MARKET, ABI_MKT, p);
+            confirmModal = new bootstrap.Modal(document.getElementById('txConfirmModal'));
             loadAssets();
         };
+
+        // 🔥🔥 4. 手机版菜单交互逻辑 🔥🔥
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('active');
+        }
+
+        // ================= UI Helper: Confirm Modal =================
+        function openConfirm(title, costText, rewardText, feeDetail, callback) {
+            document.getElementById("txModalTitle").innerText = title;
+            document.getElementById("txModalCost").innerText = costText;
+            
+            const feeEl = document.getElementById("txModalFeeInfo");
+            if(feeDetail) {
+                feeEl.innerText = feeDetail;
+                feeEl.classList.remove("d-none");
+            } else {
+                feeEl.classList.add("d-none");
+            }
+
+            const rewEl = document.getElementById("txModalRewardArea");
+            if(rewardText) {
+                document.getElementById("txModalReward").innerText = rewardText;
+                rewEl.classList.remove("d-none");
+            } else {
+                rewEl.classList.add("d-none");
+            }
+
+            pendingTxCallback = callback;
+            confirmModal.show();
+        }
+
+        async function executePendingTx() {
+            confirmModal.hide();
+            if(pendingTxCallback) pendingTxCallback();
+        }
 
         async function connectWallet() {
             if(!window.ethereum) return Swal.fire("Error", "MetaMask needed", "error");
@@ -330,7 +485,7 @@
                     orgText = `${orgInfo.name} (${orgInfo.scope})`;
                     document.querySelectorAll(".admin-only").forEach(e=>e.style.setProperty("display","block","important"));
                     document.getElementById("issue-title").innerHTML = "发起身份提案";
-                    document.getElementById("issue-btn-area").innerHTML = `<button onclick="proposeID()" class="btn btn-primary-custom w-100">发起提案 (Propose)</button>`;
+                    document.getElementById("issue-btn-area").innerHTML = `<button onclick="proposeID()" class="btn btn-primary-custom w-100">发起提案</button>`;
                     document.getElementById("my-org-info-text").innerText = `机构: ${orgInfo.name} | 地区: ${orgInfo.scope}`;
                 } else {
                     const id = await cID.identities(myAddr);
@@ -370,11 +525,78 @@
             } catch(e) { 
                 let err = e.reason || e.message;
                 if(err.includes("Sanctioned")) err = "制裁：NK (北韩) 地区禁止此操作";
+                if(err.includes("Asset Paused")) err = "资产已停牌 (Frozen)，禁止交易";
+                if(err.includes("transfer amount exceeds allowance")) err = "授权不足，请点击上方的授权按钮";
+                if(err.includes("transfer amount exceeds balance")) err = "HKC 余额不足";
                 Swal.fire("Error", err, "error"); 
             }
         }
 
-        // Actions
+        // 🔥🔥 SEPARATED APPROVE FUNCTIONS (Renamed to prevent collision) 🔥🔥
+        async function doApproveIDContract() {
+            if(!ADDR_ID || ADDR_ID.length < 40) return Swal.fire("Config Error", "ADDR_ID not set in script", "error");
+            tx(cHKC.approve(ADDR_ID, "115792089237316195423570985008687907853269984665640564039457584007913129639935"), "ID Contract Approved");
+        }
+
+        async function doApproveMarketContract() {
+            if(!ADDR_MARKET || ADDR_MARKET.length < 40) return Swal.fire("Config Error", "ADDR_MARKET not set in script", "error");
+            tx(cHKC.approve(ADDR_MARKET, "115792089237316195423570985008687907853269984665640564039457584007913129639935"), "Market Contract Approved");
+        }
+
+        // --- Action Wrappers ---
+        function proposeID() {
+            openConfirm("Propose Identity", "-5.00 HKC", null, null, () => {
+                const u=document.getElementById("targetUser").value;
+                tx(cID.proposeIdentity(u, document.getElementById("targetRegion").value, document.getElementById("targetRole").value, 365), "ID Proposed");
+            });
+        }
+
+        function proposeGov(type, extraParam) {
+            let target, targetOrg, name="", scope="";
+            let costText = "-50.00 HKC"; 
+            if (type==2) costText = "-10,000.00 HKC (Stake)";
+
+            if (type==1) { 
+                target = document.getElementById("propAdminAddr").value;
+                targetOrg = document.getElementById("propAdminTargetOrg").value || ethers.constants.AddressZero;
+            } else if (type==2) { 
+                target = document.getElementById("propOrgAddr").value;
+                name = document.getElementById("propOrgName").value;
+                scope = document.getElementById("propOrgScope").value;
+                targetOrg = ethers.constants.AddressZero;
+            } else if (type==3) { 
+                targetOrg = document.getElementById("propPauseOrgAddr").value;
+                name = extraParam; 
+                target = ethers.constants.AddressZero;
+            } else if (type==4) { 
+                target = extraParam; 
+                targetOrg = ethers.constants.AddressZero; 
+            }
+
+            openConfirm(type==2?"Create Org":"Governance Action", costText, null, null, () => {
+                tx(cID.proposeGovAction(type, target, targetOrg, name, scope), "Proposal Created");
+            });
+        }
+
+        function addAsset() {
+            openConfirm("List New Asset", "-200.00 HKC", null, null, () => {
+                tx(cMKT.addAsset(
+                    document.getElementById("newAssetName").value, 
+                    document.getElementById("newAssetPrice").value, 
+                    document.getElementById("newAssetRegion").value, 
+                    myOrgAddr
+                ), "Asset Added");
+            });
+        }
+
+        function buy(id, price, name) {
+            const fee = (price * 0.02).toFixed(2);
+            openConfirm(`Buy ${name}`, `-${price} HKC`, "+1.0 HKC (Mining)", `Includes 2% Fee (${fee} HKC)`, () => {
+                tx(cMKT.buyAsset(id), "Bought");
+            });
+        }
+
+        // --- Direct Actions ---
         function rootIssue() { 
             const u=document.getElementById("targetUser").value || myAddr;
             tx(cID.rootIssue(u, document.getElementById("targetRegion").value, document.getElementById("targetRole").value, 365), "Issued");
@@ -385,59 +607,20 @@
         function rootToggle(pause) {
             tx(cID.rootToggleIssuerPause(document.getElementById("rootIssuerAddr").value, pause), "Status Changed");
         }
+        function rootAddAdmin() {
+            tx(cID.rootAddAdmin(document.getElementById("rootAddAdminUser").value, document.getElementById("rootAddAdminOrg").value), "Admin Added");
+        }
         
-        // 🔥 MultiSig Router for Type 1,2,3,4
-        function proposeGov(type, extraParam) {
-            let target, targetOrg, name="", scope="";
-            
-            if (type==1) { // Add Admin
-                target = document.getElementById("propAdminAddr").value;
-                targetOrg = document.getElementById("propAdminTargetOrg").value || ethers.constants.AddressZero;
-            } else if (type==2) { // Add Org
-                target = document.getElementById("propOrgAddr").value;
-                name = document.getElementById("propOrgName").value;
-                scope = document.getElementById("propOrgScope").value;
-                targetOrg = ethers.constants.AddressZero;
-            } else if (type==3) { // Pause Org
-                targetOrg = document.getElementById("propPauseOrgAddr").value;
-                name = extraParam; // "true" or "false"
-                target = ethers.constants.AddressZero;
-            } else if (type==4) { // Revoke Identity (via helper)
-                target = extraParam; // User Addr passed from button
-                targetOrg = ethers.constants.AddressZero; 
-            }
-
-            tx(cID.proposeGovAction(type, target, targetOrg, name, scope), "Proposal Created");
-        }
-
         function approveGov(id) { tx(cID.approveGovAction(id), "Approved"); }
-        function proposeID() {
-            const u=document.getElementById("targetUser").value;
-            tx(cID.proposeIdentity(u, document.getElementById("targetRegion").value, document.getElementById("targetRole").value, 365), "ID Proposed");
-        }
-        function approveID(id) { tx(cID.approveIdentity(id), "ID Approved"); }
-
-        // 🔥 Revoke Logic: Root -> Direct, Admin -> Proposal
+        // 🔥 Renamed
+        function confirmIdentityProposal(id) { tx(cID.approveIdentity(id), "ID Approved"); } 
         function revokeID(u) {
-            if(isRoot) {
-                tx(cID.rootRevokeIdentity(u), "Revoked (Root)");
-            } else {
-                proposeGov(4, u); // Trigger Type 4 Proposal
-            }
+            if(isRoot) { tx(cID.rootRevokeIdentity(u), "Revoked (Root)"); } 
+            else { proposeGov(4, u); }
         }
-
-        function approveHKC() { tx(cHKC.approve(ADDR_MARKET, ethers.constants.MaxUint256), "Approved"); }
-        function buy(id) { tx(cMKT.buyAsset(id), "Bought"); }
         function sell(id) { tx(cMKT.sellAsset(id), "Sold"); }
-        function addAsset() {
-            tx(cMKT.addAsset(
-                document.getElementById("newAssetName").value, 
-                document.getElementById("newAssetPrice").value, 
-                document.getElementById("newAssetRegion").value, 
-                myOrgAddr
-            ), "Asset Added");
-        }
         function toggleAsset(id, status) { tx(cMKT.setAssetStatus(id, status), "Status Updated"); }
+        function toggleAssetPause(id, status) { tx(cMKT.setAssetPause(id, status), "Pause Status Updated"); }
 
         // Loaders
         async function loadAssets() {
@@ -447,19 +630,36 @@
                 const c = await cMKT.assetCount();
                 for(let i=1; i<=c; i++) {
                     const a = await cMKT.assets(i);
-                    if(a.isActive) {
+                    if(a.isActive && !a.isPaused) {
                         g.innerHTML += `
                         <div class="col-md-4">
                             <div class="asset-card">
                                 <div class="asset-visual"><i class="fas fa-cube asset-icon-lg"></i><span class="asset-tag">${a.requiredRegion||'Global'}</span></div>
                                 <div class="asset-content">
                                     <div class="asset-title">${a.name}</div>
-                                    <div class="asset-price-row"><div class="price-val">${a.price} HKC</div><button onclick="buy(${i})" class="btn btn-sm btn-primary-custom">Buy</button></div>
+                                    <div class="asset-price-row"><div class="price-val">${a.price} HKC</div><button onclick="buy(${i}, ${a.price}, '${a.name}')" class="btn btn-sm btn-primary-custom">Buy</button></div>
                                 </div>
                             </div>
                         </div>`;
                     }
-                    t.innerHTML+=`<tr><td>${i}</td><td>${a.name}</td><td>${a.requiredRegion||'Global'}</td><td>${a.requiredIssuer.slice(0,6)}...</td><td>${a.isActive?'✅':'❌'}</td><td><button onclick="toggleAsset(${i},${!a.isActive})" class="btn btn-sm btn-outline">Toggle</button></td></tr>`;
+                    
+                    let statusBadge = a.isActive ? '<span class="badge bg-success">Active</span>' : '<span class="badge bg-secondary">Inactive</span>';
+                    let pauseBadge = a.isPaused ? '<span class="badge bg-danger">PAUSED</span>' : '<span class="badge bg-success">Running</span>';
+                    
+                    t.innerHTML+=`
+                    <tr>
+                        <td>${i}</td>
+                        <td>${a.name}</td>
+                        <td>${a.requiredRegion||'Global'}</td>
+                        <td>${statusBadge}</td>
+                        <td>${pauseBadge}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button onclick="toggleAsset(${i},${!a.isActive})" class="btn btn-outline-secondary">Toggle</button>
+                                <button onclick="toggleAssetPause(${i},${!a.isPaused})" class="btn btn-warning">⏯️</button>
+                            </div>
+                        </td>
+                    </tr>`;
                 }
             } catch(e){}
         }
@@ -486,7 +686,7 @@
             const c = await cID.idProposalCount();
             for(let i=c; i>Math.max(0,c-5); i--) {
                 const p = await cID.getIDProposal(i);
-                if(!p.executed) t.innerHTML+=`<tr><td>${p.targetUser.slice(0,6)}...</td><td>${p.region}</td><td>${p.proposer.slice(0,6)}...</td><td><button onclick="approveID(${p.id})" class="btn btn-sm btn-primary-custom">Approve</button></td></tr>`;
+                if(!p.executed) t.innerHTML+=`<tr><td>${p.targetUser.slice(0,6)}...</td><td>${p.region}</td><td>${p.proposer.slice(0,6)}...</td><td><button onclick="confirmIdentityProposal(${p.id})" class="btn btn-sm btn-primary-custom">Approve</button></td></tr>`;
             }
         }
 
@@ -499,7 +699,7 @@
                     let desc = "Unknown";
                     if(p.actionType===1) desc = "Add Admin";
                     if(p.actionType===2) desc = `Add Org: ${p.payloadName}`;
-                    if(p.actionType===3) desc = `Pause Org: ${p.payloadName}`;
+                    if(p.actionType===3) desc = `Pause Org: ${p.payloadName}`; 
                     if(p.actionType===4) desc = `Revoke User: ${p.targetAddr.slice(0,6)}...`;
                     
                     t.innerHTML+=`<tr><td>Type ${p.actionType}</td><td>${p.targetOrg.slice(0,6)}...</td><td>${desc}</td><td><button onclick="approveGov(${p.id})" class="btn btn-sm btn-primary-custom">Approve</button></td></tr>`;
@@ -511,7 +711,7 @@
             const t = document.getElementById("all-issuers-table"); t.innerHTML="";
             const list = await cID.getAllIssuers();
             for(let a of list) {
-                const i = await cID.issuers(a);
+                const i = await cID.issuers(a); 
                 let badge = i.isActive ? (i.isPaused ? '<span class="badge bg-warning text-dark">Paused</span>' : '<span class="badge bg-success">Active</span>') : '<span class="badge bg-danger">Revoked</span>';
                 t.innerHTML+=`<tr><td>${i.name}</td><td>${i.scope}</td><td>${i.parent.slice(0,4)}...</td><td>${badge}</td></tr>`;
             }
@@ -524,8 +724,6 @@
                 for(let u of list) {
                     const id = await cID.identities(u);
                     let status = id.isValid ? '✅ Valid' : '❌ Revoked';
-                    // 🔥 Revoke Button: 
-                    // If Valid, show button. If Root -> Direct call. If Admin -> Proposal.
                     let btn = id.isValid ? `<button onclick="revokeID('${u}')" class="btn btn-sm btn-outline-danger">吊销</button>` : `<span class="text-muted">-</span>`;
                     t.innerHTML+=`<tr><td>${u.slice(0,10)}...</td><td>${id.region}</td><td>${id.role}</td><td>${status}</td><td>${btn}</td></tr>`;
                 }
@@ -535,6 +733,9 @@
         function fillMyAddress() { document.getElementById("targetUser").value = myAddr; }
         
         function nav(p) {
+            // 🔥 Mobile Fix: Close sidebar
+            document.querySelector('.sidebar').classList.remove('active'); 
+
             document.querySelectorAll('.view-section').forEach(e=>e.classList.remove('active')); 
             document.getElementById('view-'+p).classList.add('active');
             document.querySelectorAll('.nav-item').forEach(e=>e.classList.remove('active')); 
