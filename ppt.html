@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HKUST Group 29 - vLEI & DID Ecosystem</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reset.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/theme/black.css" id="theme">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- CORE STYLING --- */
+        :root {
+            --neon-cyan: #00dbde;
+            --neon-purple: #fc00ff;
+            --neon-gold: #ffd700;
+            --neon-red: #ff5f5f;
+            --bg-dark: #0b0b1e;
+            --glass-bg: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 50% 50%, #161625 0%, #050508 100%);
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Subtler Spotlight */
+        #cursor-light {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 0;
+            background: radial-gradient(800px circle at var(--x, 50%) var(--y, 50%), rgba(0, 219, 222, 0.03), transparent 40%);
+        }
+
+        .reveal { font-family: 'Inter', sans-serif; z-index: 1; color: #eee; }
+        
+        /* Typography Overrides */
+        .reveal h1, .reveal h2, .reveal h3 { 
+            text-transform: none; 
+            background: -webkit-linear-gradient(0deg, var(--neon-cyan), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            text-shadow: 0 0 30px rgba(0, 219, 222, 0.15); /* Reduced Glow */
+            margin-bottom: 0.5em;
+        }
+        .reveal h4 { color: #fff; text-transform: none; font-weight: 600; letter-spacing: 0.5px; }
+        .reveal p, .reveal li { font-weight: 300; line-height: 1.6; }
+
+        /* Utilities */
+        .accent { color: var(--neon-cyan); font-weight: 600; }
+        .warn { color: var(--neon-red); font-weight: 600; }
+        .gold { color: var(--neon-gold); font-weight: 600; }
+        .text-sm { font-size: 0.6em !important; }
+        .text-xs { font-size: 0.5em !important; color: #888; }
+        
+        /* Layout Grid */
+        .cols { display: flex; justify-content: space-between; align-items: stretch; gap: 40px; width: 100%; }
+        .col { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+        
+        /* --- REFINED GLASS CARDS --- */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 15px 0;
+            text-align: left;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: border-color 0.3s ease;
+            /* 3D Transform setup */
+            transform-style: preserve-3d;
+            transform: perspective(1000px);
+        }
+        
+        .glass-card:hover { border-color: rgba(0, 219, 222, 0.25); }
+        
+        .glass-card h5 {
+            margin: 0 0 20px 0;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            font-size: 0.9em;
+            display: flex; align-items: center; gap: 12px;
+            color: #fff;
+            text-shadow: none;
+        }
+
+        /* Clean Lists */
+        ul.clean-list { list-style: none; margin: 0; padding: 0; }
+        ul.clean-list li { 
+            margin-bottom: 15px; 
+            display: flex; 
+            align-items: flex-start; 
+            gap: 15px; 
+            font-size: 0.65em; 
+            color: #ccc;
+        }
+        ul.clean-list li i { 
+            margin-top: 4px; 
+            width: 20px; 
+            text-align: center; 
+            flex-shrink: 0;
+        }
+        ul.clean-list li strong { color: #fff; font-weight: 600; }
+
+        /* Visual Flowchart (Identity Slide) */
+        .flow-container {
+            display: flex; justify-content: space-between; align-items: center;
+            background: rgba(0,0,0,0.2); padding: 20px; border-radius: 15px;
+            border: 1px dashed rgba(255,255,255,0.1); margin-top: 20px;
+        }
+        .flow-step {
+            text-align: center; flex: 1; position: relative;
+        }
+        .flow-step .icon-box {
+            width: 60px; height: 60px; margin: 0 auto 10px;
+            background: rgba(255,255,255,0.05); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.5em; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .flow-arrow { color: #555; font-size: 1.2em; }
+
+        /* Floating Animation */
+        .float-anim { animation: float 6s ease-in-out infinite; }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+
+        /* --- APP EMBEDDING STYLES --- */
+        
+        /* The Floating "Live Demo" Button */
+        #app-trigger {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            z-index: 100;
+            padding: 10px 20px;
+            background: rgba(0, 219, 222, 0.1);
+            border: 1px solid var(--neon-cyan);
+            border-radius: 30px;
+            color: var(--neon-cyan);
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(0, 219, 222, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #app-trigger:hover {
+            background: var(--neon-cyan);
+            color: #000;
+            box-shadow: 0 0 30px rgba(0, 219, 222, 0.6);
+            transform: scale(1.05);
+        }
+
+        /* The Fullscreen Overlay */
+        #app-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: #000;
+            z-index: 200;
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        
+        #app-overlay.visible {
+            opacity: 1;
+        }
+
+        #app-frame {
+            flex: 1;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* The "Return" Bar at the bottom of overlay */
+        .overlay-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(11, 11, 30, 0.9);
+            border: 1px solid var(--neon-purple);
+            padding: 10px 20px;
+            border-radius: 50px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn-return {
+            background: linear-gradient(90deg, var(--neon-purple), #9d00ff);
+            border: none;
+            color: white;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            transition: transform 0.2s;
+            display: flex; align-items: center; gap: 8px;
+        }
+        
+        .btn-return:hover { transform: scale(1.05); box-shadow: 0 0 15px var(--neon-purple); }
+
+    </style>
+</head>
+<body>
+    <div id="cursor-light"></div>
+
+    <button id="app-trigger" onclick="openApp()">
+        <i class="fas fa-desktop"></i> Open RWA Platform
+    </button>
+
+    <div id="app-overlay">
+        <iframe id="app-frame" src="about:blank"></iframe>
+        <div class="overlay-controls">
+            <span style="color: #aaa; font-size: 0.8em; margin-right: 10px;">Live Preview Mode</span>
+            <button class="btn-return" onclick="closeApp()">
+                <i class="fas fa-undo-alt"></i> Return to Slides
+            </button>
+        </div>
+    </div>
+
+    <div class="reveal">
+        <div class="slides">
+
+            <section data-background-gradient="linear-gradient(135deg, #0b0b20 0%, #1a1a1a 100%)">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                    <div class="float-anim" style="font-size: 2.5em; margin-bottom: 30px;">
+                        <i class="fas fa-cube" style="filter: drop-shadow(0 0 15px rgba(0,219,222,0.6)); color: #fff;"></i>
+                    </div>
+
+                    <h1 style="margin: 0 0 10px 0; font-size: 2.8em; font-weight: 700; letter-spacing: -1px; text-shadow: 0 4px 8px rgba(0,0,0,0.3);">
+                        vLEI & DID Fusion
+                    </h1>
+
+                    <h3 style="margin: 0 0 50px 0; font-size: 0.9em; color: #00dbde; letter-spacing: 6px; text-transform: uppercase; font-weight: 400;">
+                        Trusted Identity Ecosystem
+                    </h3>
+
+                    <p class="fragment fade-up" style="margin-top: 0; font-size: 0.5em; line-height: 2.2; color: #cbd5e1; font-weight: 300;">
+                        Integrating Real World Assets with <br>
+                        <span class="accent" style="color: #fff; font-weight: 600; border-bottom: 1px solid rgba(0,219,222,0.5); padding-bottom: 2px;">vLEI Governance</span> 
+                        & 
+                        <span class="accent" style="color: #fff; font-weight: 600; border-bottom: 1px solid rgba(0,219,222,0.5); padding-bottom: 2px;">HKC Tokenomics</span>
+                    </p>
+
+                    <div class="fragment fade-in" style="margin-top: 60px; font-size: 0.4em; opacity: 0.6; letter-spacing: 3px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; width: 300px;">
+                        GROUP 29 | 29 NOV
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2>Trust Architecture</h2>
+                <div class="cols">
+                    <div class="col">
+                        <div class="glass-card fragment" data-tilt data-tilt-max="3" data-tilt-glare data-tilt-max-glare="0.1">
+                            <h5><i class="fas fa-sitemap accent"></i> vLEI Hierarchy</h5>
+                            <p class="text-sm" style="color: #ccc; margin-bottom: 15px;">
+                                Mapping legal entity structures to on-chain permissions using the GLEIF model.
+                            </p>
+                            <div style="text-align: center; font-size: 0.6em; line-height: 2; color: #888;">
+                                <span class="warn" style="font-weight: 700;">ROOT (Regulator)</span><br>
+                                <i class="fas fa-arrow-down"></i><br>
+                                <span class="gold" style="font-weight: 700;">PARENT ORG</span><br>
+                                <i class="fas fa-arrow-down"></i><br>
+                                <span class="accent" style="font-weight: 700;">CHILD ORG</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="glass-card fragment" data-tilt data-tilt-max="3" data-tilt-glare data-tilt-max-glare="0.1">
+                            <h5><i class="fas fa-id-badge accent"></i> DID Credentials</h5>
+                            <ul class="clean-list">
+                                <li>
+                                    <i class="fas fa-check-circle accent"></i>
+                                    <div><strong>Verifiable:</strong> Cryptographic proof of identity without revealing PII.</div>
+                                </li>
+                                <li>
+                                    <i class="fas fa-globe accent"></i>
+                                    <div><strong>Scoped:</strong> Permissions resricted by Jurisdiction (e.g., HK, US).</div>
+                                </li>
+                                <li>
+                                    <i class="fas fa-user-shield accent"></i>
+                                    <div><strong>Access Control:</strong> Strict permission boundaries between Regulators, Issuers, and Traders.</div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h3>Hierarchical Governance</h3>
+                <p class="text-sm" style="opacity: 0.7;">Enforcing the vLEI Trust Chain on Smart Contracts</p>
+                
+                <div class="cols mt-4">
+                    <div class="col">
+                        <div class="glass-card fragment" data-tilt data-tilt-max="3">
+                            <h5><i class="fas fa-link accent"></i> Authority Binding</h5>
+                            <ul class="clean-list">
+                                <li>
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <div>
+                                        <strong>Region Lock:</strong><br>
+                                        HK Organizations can <em>only</em> issue HK DIDs.
+                                    </div>
+                                </li>
+                                <li>
+                                    <i class="fas fa-file-signature"></i>
+                                    <div>
+                                        <strong>Multi-Sig Execution:</strong><br>
+                                        Requires <span class="accent">Proposer + Approver</span> (2-of-N) consensus for all critical actions.
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="col">
+                        <div class="glass-card fragment" data-tilt data-tilt-max="3">
+                            <h5><i class="fas fa-balance-scale gold"></i> Accountability</h5>
+                            <ul class="clean-list">
+                                <li>
+                                    <i class="fas fa-lock gold"></i>
+                                    <div>
+                                        <strong>Staking Requirement:</strong><br>
+                                        Parent must stake <strong>10,000 HKC</strong> to create a Child Org.
+                                    </div>
+                                </li>
+                                <li>
+                                    <i class="fas fa-gavel warn"></i>
+                                    <div>
+                                        <strong>Slashing Mechanism:</strong><br>
+                                        If a Child Org violates compliance, the Parent's stake is slashed.
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h3>Identity & Compliance Engine</h3>
+                <p class="text-sm" style="margin-bottom: 30px;">Automated On-Chain Verification Logic</p>
+
+                <div class="fragment fade-up">
+                    <div class="flow-container">
+                        <div class="flow-step">
+                            <div class="icon-box" style="border-color: var(--neon-cyan); color: var(--neon-cyan);">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="text-sm"><strong>User DID</strong><br>Region: HK</div>
+                        </div>
+                        
+                        <div class="flow-arrow"><i class="fas fa-plus"></i></div>
+                        
+                        <div class="flow-step">
+                            <div class="icon-box" style="border-color: var(--neon-purple); color: var(--neon-purple);">
+                                <i class="fas fa-cube"></i>
+                            </div>
+                            <div class="text-sm"><strong>Target Asset</strong><br>Scope: HK</div>
+                        </div>
+
+                        <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+
+                        <div class="flow-step" style="flex: 1.5; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; margin: 0 10px;">
+                            <div class="text-xs" style="text-transform: uppercase; margin-bottom: 10px;">Smart Contract Logic</div>
+                            <ul class="clean-list" style="font-size: 0.55em;">
+                                <li><i class="fas fa-check text-success"></i> Is DID Valid?</li>
+                                <li><i class="fas fa-check text-success"></i> Is Issuer Active?</li>
+                                <li><i class="fas fa-check text-success"></i> Region Match?</li>
+                            </ul>
+                        </div>
+
+                        <div class="flow-arrow"><i class="fas fa-arrow-right"></i></div>
+
+                        <div class="flow-step">
+                            <div class="icon-box" style="background: rgba(0, 219, 222, 0.1); border-color: var(--neon-cyan); color: #fff;">
+                                <i class="fas fa-unlock-alt"></i>
+                            </div>
+                            <div class="text-sm"><strong class="accent">Approved</strong><br>Trade Execute</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cols mt-4">
+                    <div class="col">
+                        <div class="glass-card" style="padding: 15px; margin: 0; border-color: var(--neon-red);">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <i class="fas fa-ban warn" style="font-size: 1.5em;"></i>
+                                <div>
+                                    <strong class="warn" style="font-size: 0.7em;">Dynamic Revocation</strong>
+                                    <p class="text-xs" style="margin: 0;">If an Issuer is paused, ALL its user DIDs freeze instantly.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="glass-card" style="padding: 15px; margin: 0;">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <i class="fas fa-globe-americas accent" style="font-size: 1.5em;"></i>
+                                <div>
+                                    <strong class="accent" style="font-size: 0.7em;">Geo-Fencing</strong>
+                                    <p class="text-xs" style="margin: 0;">US Assets are strictly physically restricted to US DIDs.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h3>HKC Tokenomics</h3>
+                
+                <div class="cols" style="align-items: center;">
+                    <div class="col" style="flex: 1.3;">
+                        <div style="position: relative; height: 50vh; max-height: 450px; width: 100%;">
+                            <canvas id="tokenomicsChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="col" style="flex: 0.7;">
+                        <div class="glass-card" style="padding: 20px;" data-tilt data-tilt-max="2">
+                            <h5 style="border:none; margin-bottom:10px;">Utility Allocation</h5>
+                            <ul class="clean-list">
+                                <li data-chart-index="0" style="cursor: pointer;">
+                                    <i class="fas fa-circle" style="color:#3b82f6"></i> 
+                                    <div><strong>30% Ecosystem</strong><br>Mining Rewards</div>
+                                </li>
+                                <li data-chart-index="4" style="cursor: pointer;">
+                                    <i class="fas fa-circle" style="color:#8b5cf6"></i> 
+                                    <div><strong>10% Staking</strong><br>Identity Node Collateral</div>
+                                </li>
+                                <li data-chart-index="2" style="cursor: pointer;">
+                                    <i class="fas fa-circle" style="color:#10b981"></i> 
+                                    <div><strong>20% Reserve</strong><br>Compliance & Buyback</div>
+                                </li>
+                                <li data-chart-index="1" style="opacity: 0.6;">
+                                    <i class="fas fa-circle" style="color:#ef4444"></i> 
+                                    <div>25% Liquidity</div>
+                                </li>
+                                <li data-chart-index="3" style="opacity: 0.6;">
+                                    <i class="fas fa-circle" style="color:#f59e0b"></i> 
+                                    <div>15% Team (Vested)</div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h3>The RWA Market Loop</h3>
+                <p class="text-sm">How Identity powers the Value Cycle</p>
+
+                <div class="r-stack mt-4">
+                    <div class="glass-card fragment fade-in-then-out" style="width: 80%; text-align: center; padding: 40px;">
+                        <div class="float-anim" style="font-size: 3em; color: var(--neon-purple); margin-bottom: 20px;">
+                            <i class="fas fa-sync-alt"></i>
+                        </div>
+                        <h4>Closed-Loop Compliance</h4>
+                        <p class="text-sm">Identity Verification happens <strong>atomically</strong> inside every Buy/Sell transaction.</p>
+                    </div>
+
+                    <div class="glass-card fragment fade-in" style="width: 90%;">
+                        <h5><i class="fas fa-exchange-alt accent"></i> Transaction Flow</h5>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
+                            <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 10px;">
+                                <strong class="accent" style="font-size: 0.8em;">1. Buyer Action</strong>
+                                <p class="text-xs">Submits Transaction + DID Proof.</p>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 10px;">
+                                <strong class="gold" style="font-size: 0.8em;">2. Incentive</strong>
+                                <p class="text-xs">Buyer receives asset reward.</p>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 10px;">
+                                <strong class="warn" style="font-size: 0.8em;">3. Protocol Fee</strong>
+                                <p class="text-xs">2% Fee routed to Compliance Reserve.</p>
+                            </div>
+                            <div style="background: rgba(255,255,255,0.03); padding: 15px; border-radius: 10px;">
+                                <strong style="font-size: 0.8em;">4. Settlement</strong>
+                                <p class="text-xs">98% Funds settle to Seller instantly.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h3 class="warn" style="text-shadow: 0 0 15px rgba(255, 95, 95, 0.3);">"Root" God Mode</h3>
+                <p class="text-sm">The Ultimate Arbiter (Regulator) in the vLEI System</p>
+                
+                <div class="cols mt-4">
+                    <div class="col" style="flex: 0.4;">
+                        <i class="fas fa-shield-alt warn float-anim" style="font-size: 6em; filter: drop-shadow(0 0 20px rgba(255, 95, 95, 0.4)); opacity: 0.9;"></i>
+                    </div>
+                    <div class="col" style="flex: 1.6;">
+                        <div class="glass-card" style="border-left: 4px solid var(--neon-red);">
+                            <ul class="clean-list">
+                                <li class="fragment">
+                                    <i class="fas fa-bolt warn"></i> 
+                                    <div><strong>Force Override:</strong> Can bypass Multi-Sig logic in emergencies.</div>
+                                </li>
+                                <li class="fragment">
+                                    <i class="fas fa-skull warn"></i> 
+                                    <div><strong>Identity Kill Switch:</strong> Can instantly revoke any specific DID.</div>
+                                </li>
+                                <li class="fragment">
+                                    <i class="fas fa-hand-paper warn"></i> 
+                                    <div><strong>Asset Freeze:</strong> Halt trading for investigations (Black Swan protection).</div>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="fragment text-xs" style="margin-top: 15px; opacity: 0.7; border: 1px dashed #555; padding: 10px; border-radius: 8px;">
+                            * Mirrors real-world legal enforcement capabilities on-chain.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h3>Summary</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+                    <div class="glass-card fragment" data-tilt data-tilt-max="3">
+                        <div class="accent mb-2" style="font-size: 1.1em;"><i class="fas fa-fingerprint"></i> vLEI & DID</div>
+                        <p class="text-xs">Hierarchical trust model mapping legal entities to chain.</p>
+                    </div>
+                    <div class="glass-card fragment" data-tilt data-tilt-max="3">
+                        <div class="gold mb-2" style="font-size: 1.1em;"><i class="fas fa-coins"></i> Economics</div>
+                        <p class="text-xs">Staking for security, Mining for liquidity.</p>
+                    </div>
+                    <div class="glass-card fragment" data-tilt data-tilt-max="3">
+                        <div class="warn mb-2" style="font-size: 1.1em;"><i class="fas fa-gavel"></i> Compliance</div>
+                        <p class="text-xs">Automated Geo-fencing & Slashing mechanics.</p>
+                    </div>
+                    <div class="glass-card fragment" data-tilt data-tilt-max="3">
+                        <div class="accent mb-2" style="font-size: 1.1em;"><i class="fas fa-chart-line"></i> Closed Loop</div>
+                        <p class="text-xs">End-to-end regulated RWA trading environment.</p>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    </div>
+            </section>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.5.0/dist/reveal.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vanilla-tilt/1.8.0/vanilla-tilt.min.js"></script>
+
+    <script>
+        // 1. Initialize Reveal.js with 16:9 Aspect Ratio
+        Reveal.initialize({
+            hash: false, 
+            history: false,
+            controls: true,
+            progress: true,
+            center: true,
+            width: 1200,
+            height: 675,
+            margin: 0.08,
+            minScale: 0.2,
+            maxScale: 2.0,
+            transition: 'slide', 
+            backgroundTransition: 'zoom'
+        });
+
+        // 2. Mouse Spotlight Effect
+        document.addEventListener('mousemove', (e) => {
+            const light = document.getElementById('cursor-light');
+            light.style.setProperty('--x', e.clientX + 'px');
+            light.style.setProperty('--y', e.clientY + 'px');
+        });
+
+        // 3. Initialize Chart.js
+        Reveal.on('ready', event => {
+            const ctx = document.getElementById('tokenomicsChart').getContext('2d');
+            
+            // Palette
+            const colors = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6'];
+            
+            const myChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Ecosystem', 'Market', 'Reserve', 'Team', 'Staking'],
+                    datasets: [{
+                        data: [30, 25, 20, 15, 10],
+                        backgroundColor: colors,
+                        borderColor: '#0b0b1e',
+                        borderWidth: 3,
+                        hoverOffset: 15
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            titleColor: '#000',
+                            bodyColor: '#000',
+                            bodyFont: { family: 'Inter', weight: 'bold' },
+                            padding: 12,
+                            cornerRadius: 8,
+                            displayColors: true
+                        }
+                    },
+                    animation: { animateScale: true, animateRotate: true },
+                    layout: { padding: 20 }
+                }
+            });
+
+            // Link Custom HTML Legend to Chart
+            document.querySelectorAll('[data-chart-index]').forEach(item => {
+                item.addEventListener('mouseenter', () => {
+                    const idx = item.getAttribute('data-chart-index');
+                    myChart.setActiveElements([{ datasetIndex: 0, index: parseInt(idx) }]);
+                    myChart.update();
+                });
+                item.addEventListener('mouseleave', () => {
+                    myChart.setActiveElements([]);
+                    myChart.update();
+                });
+            });
+        });
+
+        // 4. EMBEDDED APP CONTROLS
+        const appOverlay = document.getElementById('app-overlay');
+        const appFrame = document.getElementById('app-frame');
+        // 注意：Iframe 必须是 HTTPS，否则在大多数服务器上会被拦截
+        const targetUrl = "https://rwa.henryhl.wang/index.html"; 
+
+        function openApp() {
+            // Load URL only on first click to ensure it's fresh, 
+            // but check if it's already set to avoid reloading on every toggle if you prefer
+            if (appFrame.src === "about:blank") {
+                appFrame.src = targetUrl;
+            }
+            
+            appOverlay.style.display = 'flex';
+            // Slight delay to allow CSS transition to catch the display change
+            setTimeout(() => {
+                appOverlay.classList.add('visible');
+            }, 10);
+        }
+
+        function closeApp() {
+            appOverlay.classList.remove('visible');
+            setTimeout(() => {
+                appOverlay.style.display = 'none';
+            }, 500); // Matches CSS transition duration
+        }
+    </script>
+</body>
+</html>
