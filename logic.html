@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HKUST Group 29 - Logic Ecosystem Visualizer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SweetAlert2 (for nice popups) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Anime.js (for animations) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+
+    <style>
+        :root {
+            --neon-cyan: #00dbde;
+            --neon-purple: #fc00ff;
+            --neon-gold: #ffd700;
+            --neon-red: #ff5f5f;
+            --bg-dark: #0b0b1e;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            background-image: radial-gradient(circle at 50% 50%, #161625 0%, #050508 100%);
+            font-family: 'Inter', sans-serif;
+            color: #eee;
+            overflow: hidden; /* App style */
+        }
+
+        /* Glassmorphism */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Neon Glows */
+        .text-glow { text-shadow: 0 0 10px rgba(0, 219, 222, 0.5); }
+        .border-glow-cyan { border-color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0, 219, 222, 0.2); }
+        .border-glow-red { border-color: var(--neon-red); box-shadow: 0 0 15px rgba(255, 95, 95, 0.2); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0b0b1e; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--neon-cyan); }
+
+        /* Module Transitions */
+        .module-section {
+            display: none;
+            animation: fadeIn 0.4s ease-out;
+        }
+        .module-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Interactive Elements */
+        .interactive-node {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .interactive-node:hover { transform: scale(1.02); }
+
+        .btn-neon {
+            background: rgba(0, 219, 222, 0.1);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            transition: all 0.3s;
+        }
+        .btn-neon:hover {
+            background: var(--neon-cyan);
+            color: #000;
+            box-shadow: 0 0 20px rgba(0, 219, 222, 0.6);
+        }
+
+        .btn-danger {
+            background: rgba(255, 95, 95, 0.1);
+            border: 1px solid var(--neon-red);
+            color: var(--neon-red);
+        }
+        .btn-danger:hover {
+            background: var(--neon-red);
+            color: white;
+            box-shadow: 0 0 20px rgba(255, 95, 95, 0.6);
+        }
+
+        /* Flow Lines Canvas */
+        #flowCanvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="h-16 border-b border-gray-800 flex items-center justify-between px-6 bg-opacity-50 bg-black z-20">
+        <div class="flex items-center gap-3">
+            <i class="fas fa-cube text-2xl text-cyan-400"></i>
+            <h1 class="text-xl font-bold tracking-wider">
+                <span class="text-cyan-400">RWA</span> + <span class="text-purple-400">HKC</span> Ecosystem
+            </h1>
+        </div>
+        <div class="flex items-center gap-4 text-sm">
+            <div class="px-3 py-1 rounded bg-gray-800 border border-gray-700">
+                <span class="text-gray-400">当前视角:</span> <span class="text-white font-bold" id="currentView">系统概览</span>
+            </div>
+            <div class="px-3 py-1 rounded bg-gray-800 border border-gray-700">
+                <i class="fas fa-coins text-yellow-400 mr-2"></i>模拟余额: <span id="simBalance" class="font-mono text-yellow-400">100,000</span> HKC
+            </div>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden relative">
+        <!-- Sidebar Navigation -->
+        <nav class="w-64 glass-panel m-4 mr-0 flex flex-col p-4 gap-2 z-20">
+            <button onclick="switchModule('tokenomics')" class="nav-btn p-3 rounded-lg text-left hover:bg-white/10 transition flex items-center gap-3 active-nav bg-cyan-500/10 border border-cyan-500/30">
+                <i class="fas fa-chart-pie w-6 text-center text-blue-400"></i>
+                <div>
+                    <div class="font-bold text-sm">1. 代币经济学</div>
+                    <div class="text-xs text-gray-400">价值分配与储备</div>
+                </div>
+            </button>
+            <button onclick="switchModule('governance')" class="nav-btn p-3 rounded-lg text-left hover:bg-white/10 transition flex items-center gap-3">
+                <i class="fas fa-sitemap w-6 text-center text-purple-400"></i>
+                <div>
+                    <div class="font-bold text-sm">2. 治理层级</div>
+                    <div class="text-xs text-gray-400">多签与质押</div>
+                </div>
+            </button>
+            <button onclick="switchModule('identity')" class="nav-btn p-3 rounded-lg text-left hover:bg-white/10 transition flex items-center gap-3">
+                <i class="fas fa-id-card w-6 text-center text-green-400"></i>
+                <div>
+                    <div class="font-bold text-sm">3. 身份合规</div>
+                    <div class="text-xs text-gray-400">准入与制裁</div>
+                </div>
+            </button>
+            <button onclick="switchModule('market')" class="nav-btn p-3 rounded-lg text-left hover:bg-white/10 transition flex items-center gap-3">
+                <i class="fas fa-exchange-alt w-6 text-center text-yellow-400"></i>
+                <div>
+                    <div class="font-bold text-sm">4. 市场交易</div>
+                    <div class="text-xs text-gray-400">闭环与分润</div>
+                </div>
+            </button>
+            <button onclick="switchModule('godmode')" class="nav-btn p-3 rounded-lg text-left hover:bg-white/10 transition flex items-center gap-3 mt-auto border border-red-500/30">
+                <i class="fas fa-skull w-6 text-center text-red-500"></i>
+                <div>
+                    <div class="font-bold text-sm text-red-400">5. 上帝模式</div>
+                    <div class="text-xs text-gray-400">监管终极权限</div>
+                </div>
+            </button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 p-6 z-10 overflow-y-auto relative">
+            
+            <!-- MODULE 1: Tokenomics -->
+            <section id="tokenomics" class="module-section active h-full">
+                <div class="grid grid-cols-2 gap-6 h-full">
+                    <div class="glass-panel p-6 flex flex-col items-center justify-center">
+                        <h2 class="text-2xl font-bold mb-6 text-blue-400"><i class="fas fa-coins mr-2"></i>10亿 HKC 分配图</h2>
+                        <div class="w-full max-w-md h-64 relative">
+                            <canvas id="tokenChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-panel p-6 overflow-y-auto">
+                        <h3 class="text-lg font-bold mb-4 border-b border-gray-700 pb-2">创世分配机制</h3>
+                        <div class="space-y-4">
+                            <div class="p-3 bg-blue-500/10 border-l-4 border-blue-500 rounded hover:bg-blue-500/20 transition cursor-help" onclick="showInfo('ecosystem')">
+                                <div class="flex justify-between font-bold text-blue-300">
+                                    <span>生态激励池</span>
+                                    <span>30% (3亿)</span>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-1">用于交易挖矿奖励，存入专用 Reward Wallet。</p>
+                            </div>
+                            <div class="p-3 bg-red-500/10 border-l-4 border-red-500 rounded hover:bg-red-500/20 transition cursor-help" onclick="showInfo('liquidity')">
+                                <div class="flex justify-between font-bold text-red-300">
+                                    <span>市场流通 (LP)</span>
+                                    <span>25% (2.5亿)</span>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-1">提供初始交易所流动性。</p>
+                            </div>
+                            <div class="p-3 bg-green-500/10 border-l-4 border-green-500 rounded hover:bg-green-500/20 transition cursor-help" onclick="showInfo('reserve')">
+                                <div class="flex justify-between font-bold text-green-300">
+                                    <span>合规储备金</span>
+                                    <span>20% (2亿)</span>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-1">监管兜底资金，接收 Slash 罚没款项。</p>
+                            </div>
+                            <div class="p-3 bg-yellow-500/10 border-l-4 border-yellow-500 rounded hover:bg-yellow-500/20 transition cursor-help" onclick="showInfo('team')">
+                                <div class="flex justify-between font-bold text-yellow-300">
+                                    <span>团队锁仓</span>
+                                    <span>15% (1.5亿)</span>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-1">Vesting 合约锁定 2 年，线性释放。</p>
+                            </div>
+                            <div class="p-3 bg-purple-500/10 border-l-4 border-purple-500 rounded hover:bg-purple-500/20 transition cursor-help" onclick="showInfo('staking')">
+                                <div class="flex justify-between font-bold text-purple-300">
+                                    <span>机构质押池</span>
+                                    <span>10% (1亿)</span>
+                                </div>
+                                <p class="text-xs text-gray-400 mt-1">作为未来机构入驻的奖励储备。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MODULE 2: Governance -->
+            <section id="governance" class="module-section h-full">
+                <div class="glass-panel p-6 h-full flex flex-col">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-purple-400"><i class="fas fa-project-diagram mr-2"></i>机构层级与质押</h2>
+                        <button onclick="createProposal()" class="btn-neon px-4 py-2 rounded text-sm font-bold">
+                            <i class="fas fa-plus mr-2"></i>发起 Type 2 建子机构提案
+                        </button>
+                    </div>
+
+                    <!-- Tree Viz -->
+                    <div class="flex-1 flex flex-col items-center gap-8 relative p-4 bg-black/20 rounded-xl overflow-hidden">
+                        <!-- Root -->
+                        <div class="interactive-node w-48 p-3 bg-red-900/30 border-2 border-red-500 rounded text-center z-10 relative">
+                            <div class="text-xs text-red-300 uppercase font-bold">Root / Regulator</div>
+                            <div class="font-bold text-white">HKMA (监管)</div>
+                            <div class="text-[10px] text-gray-400 mt-1">权限: 全球</div>
+                        </div>
+
+                        <!-- Level 1 -->
+                        <div class="flex justify-center gap-12 w-full z-10">
+                            <div class="interactive-node w-40 p-3 bg-purple-900/30 border border-purple-500 rounded text-center relative">
+                                <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-gray-900 px-2 text-[10px] border border-gray-700 rounded text-gray-300">已质押</div>
+                                <div class="text-xs text-purple-300 uppercase font-bold">Parent Org</div>
+                                <div class="font-bold text-white">Bank of China</div>
+                                <div class="text-[10px] text-gray-400 mt-1">区域: HK</div>
+                            </div>
+                            <div class="interactive-node w-40 p-3 bg-purple-900/30 border border-purple-500 rounded text-center relative opacity-50 grayscale">
+                                <div class="text-xs text-purple-300 uppercase font-bold">Parent Org</div>
+                                <div class="font-bold text-white">US Trust</div>
+                                <div class="text-[10px] text-gray-400 mt-1">区域: US (未激活)</div>
+                            </div>
+                        </div>
+
+                        <!-- Level 2 -->
+                        <div id="childContainer" class="flex justify-center gap-8 w-full z-10 flex-wrap">
+                            <!-- Dynamic Children go here -->
+                            <div class="interactive-node w-36 p-3 bg-cyan-900/30 border border-cyan-500 rounded text-center relative">
+                                <div class="text-xs text-cyan-300 uppercase font-bold">Child Org</div>
+                                <div class="font-bold text-white">BOC Asset Mgt</div>
+                                <div class="text-[10px] text-gray-400 mt-1">区域: HK</div>
+                            </div>
+                        </div>
+
+                        <!-- Connector Lines (Visual CSS for simplicity) -->
+                        <div class="absolute inset-0 pointer-events-none flex flex-col items-center pt-10">
+                            <div class="h-16 w-0.5 bg-gray-600"></div> <!-- Root to connector -->
+                            <div class="w-64 h-0.5 bg-gray-600"></div> <!-- Horizontal Bar -->
+                            <div class="flex justify-between w-64">
+                                <div class="h-12 w-0.5 bg-gray-600"></div>
+                                <div class="h-12 w-0.5 bg-gray-600"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Proposal Simulator -->
+                    <div class="mt-4 p-4 bg-gray-800/50 rounded-lg text-sm border-l-4 border-yellow-500">
+                        <h4 class="font-bold text-yellow-500 mb-2">治理逻辑模拟器:</h4>
+                        <ul class="list-disc pl-5 space-y-1 text-gray-300">
+                            <li>创建机构 (Type 2): 需要 <span class="text-white font-mono">10,000 HKC</span> 质押金。</li>
+                            <li>敏感操作: 需要 <span class="text-cyan-400">Proposer</span> + <span class="text-purple-400">Approver</span> 多签共识。</li>
+                            <li>违规后果: 子机构违规 -> Root 没收父机构质押金 -> 注入合规储备。</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MODULE 3: Identity -->
+            <section id="identity" class="module-section h-full">
+                <div class="grid grid-cols-2 gap-6 h-full">
+                    <!-- Check Console -->
+                    <div class="glass-panel p-6">
+                        <h2 class="text-xl font-bold mb-4 text-green-400"><i class="fas fa-check-circle mr-2"></i>合规检查引擎 (CheckCompliance)</h2>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">用户区域 (Region)</label>
+                                <select id="idRegion" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white">
+                                    <option value="HK">Hong Kong (HK) - 合规</option>
+                                    <option value="US">United States (US) - 跨区限制</option>
+                                    <option value="NK">North Korea (NK) - 制裁名单</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">发行机构状态</label>
+                                <select id="idIssuerStatus" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-white">
+                                    <option value="active">Active (正常)</option>
+                                    <option value="paused">Paused (机构暂停 - 下属全冻结)</option>
+                                    <option value="revoked">Revoked (机构吊销)</option>
+                                </select>
+                            </div>
+                            <button onclick="runComplianceCheck()" class="w-full btn-neon py-3 rounded font-bold mt-4">
+                                运行合规合约检查
+                            </button>
+                        </div>
+
+                        <div id="checkResult" class="mt-6 p-4 rounded bg-black/40 border border-gray-700 hidden text-center">
+                            <!-- Result injected via JS -->
+                        </div>
+                    </div>
+
+                    <!-- Rules List -->
+                    <div class="glass-panel p-6 bg-red-900/10 border-red-500/30">
+                        <h3 class="text-lg font-bold mb-4 text-red-400"><i class="fas fa-ban mr-2"></i>制裁与吊销逻辑</h3>
+                        <div class="space-y-4 text-sm">
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-skull text-red-500 mt-1"></i>
+                                <div>
+                                    <strong class="text-white">级联吊销 (Cascade Revocation)</strong>
+                                    <p class="text-gray-400">如果 Root 暂停了一个 Parent 机构，该机构下属的所有 Child 机构及所有终端用户身份 <span class="text-red-400">瞬间失效</span>。</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-globe-americas text-blue-400 mt-1"></i>
+                                <div>
+                                    <strong class="text-white">地理围栏 (Geo-Fencing)</strong>
+                                    <p class="text-gray-400">HK 资产只能由持有 HK DID 的用户交易。NK 用户会被制裁名单合约自动拦截。</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-user-slash text-yellow-400 mt-1"></i>
+                                <div>
+                                    <strong class="text-white">Admin 权限</strong>
+                                    <p class="text-gray-400">Admin 默认通过合规检查，但可被 Root 强制剥夺权限。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MODULE 4: Market -->
+            <section id="market" class="module-section h-full">
+                <div class="flex flex-col h-full gap-4">
+                    <!-- Top Status Bar -->
+                    <div class="glass-panel p-3 flex justify-between items-center" id="marketStatusPanel">
+                        <div class="flex gap-4">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                <span class="text-sm font-bold text-green-400">市场状态: 活跃</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <span class="text-sm font-bold text-blue-400">资产: Tokenized Real Estate (TRE)</span>
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-500 font-mono">Contract: 0x...RWA</div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-6 flex-1">
+                        <!-- Asset Card -->
+                        <div class="glass-panel p-6 flex flex-col items-center text-center relative overflow-hidden group">
+                            <div class="absolute top-0 right-0 bg-yellow-500 text-black text-xs font-bold px-2 py-1">在架</div>
+                            <i class="fas fa-city text-5xl text-blue-500 mb-4 group-hover:scale-110 transition"></i>
+                            <h3 class="text-xl font-bold">HK Luxury Apt Fragment</h3>
+                            <p class="text-gray-400 text-sm mt-2">ID: #8821</p>
+                            <div class="mt-4 text-2xl font-mono text-white">1,000 HKC</div>
+                            
+                            <div class="mt-auto w-full pt-4 border-t border-gray-700">
+                                <button onclick="executeTrade()" class="w-full btn-neon py-2 rounded font-bold">
+                                    BUY (买入)
+                                </button>
+                                <div class="mt-2 text-xs text-gray-500">包含 2% 协议费 + 挖矿奖励</div>
+                            </div>
+                        </div>
+
+                        <!-- Transaction Log / Animation Area -->
+                        <div class="glass-panel p-0 col-span-2 relative bg-black/40 font-mono text-xs overflow-hidden flex flex-col">
+                            <div class="p-3 border-b border-gray-700 font-bold text-gray-300 bg-gray-900/50">交易日志 (Transaction Flow)</div>
+                            <div id="txLog" class="p-4 flex-1 overflow-y-auto space-y-2 text-gray-400">
+                                <div class="text-gray-600 italic">等待交易...</div>
+                            </div>
+                            
+                            <!-- Visual Representation of Split -->
+                            <div id="moneyFlow" class="absolute bottom-0 left-0 w-full h-1/3 bg-gray-900/90 border-t border-gray-700 hidden flex items-center justify-around p-4">
+                                <div class="text-center">
+                                    <i class="fas fa-wallet text-2xl text-white"></i>
+                                    <div class="text-red-400">-1000</div>
+                                </div>
+                                <div class="flex-1 h-1 bg-gray-700 mx-4 relative">
+                                    <div id="animCoin" class="absolute top-1/2 left-0 -translate-y-1/2 w-3 h-3 bg-yellow-400 rounded-full shadow-[0_0_10px_gold]"></div>
+                                </div>
+                                <div class="flex gap-4">
+                                    <div class="text-center">
+                                        <i class="fas fa-store text-xl text-blue-400"></i>
+                                        <div class="text-green-400 text-[10px]">+980 (Seller)</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <i class="fas fa-university text-xl text-green-400"></i>
+                                        <div class="text-green-400 text-[10px]">+20 (Reserve)</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MODULE 5: God Mode -->
+            <section id="godmode" class="module-section h-full">
+                <div class="glass-panel p-6 border-red-500/50 box-shadow-red h-full bg-red-900/5 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10">
+                        <i class="fas fa-eye text-9xl text-red-500"></i>
+                    </div>
+
+                    <h2 class="text-3xl font-bold text-red-500 mb-2">ROOT GOD MODE</h2>
+                    <p class="text-gray-400 mb-8 border-b border-red-900/50 pb-4">监管绝对控制台：无视所有规则，强制执行。</p>
+
+                    <div class="grid grid-cols-2 gap-8">
+                        <div>
+                            <h3 class="font-bold text-white mb-4">全局控制</h3>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between p-4 bg-black/40 border border-red-900 rounded">
+                                    <div>
+                                        <div class="text-red-400 font-bold">强制停牌 (Freeze Market)</div>
+                                        <div class="text-xs text-gray-500">将所有资产 isPaused 设为 TRUE</div>
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="godFreezeToggle" class="sr-only peer" onchange="toggleMarketFreeze()">
+                                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
+                                    </label>
+                                </div>
+
+                                <div class="flex items-center justify-between p-4 bg-black/40 border border-red-900 rounded">
+                                    <div>
+                                        <div class="text-red-400 font-bold">一键清退 (Identity Kill Switch)</div>
+                                        <div class="text-xs text-gray-500">吊销所有二级机构及其用户</div>
+                                    </div>
+                                    <button onclick="killSwitch()" class="btn-danger px-4 py-2 rounded text-xs font-bold">EXECUTE</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h3 class="font-bold text-white mb-4">日志审计</h3>
+                            <div class="h-40 bg-black font-mono text-xs text-green-500 p-2 overflow-y-auto border border-gray-700 rounded" id="godLog">
+                                > System initialized...<br>
+                                > Root access granted.<br>
+                                > Monitoring active.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        // --- 1. GLOBAL STATE ---
+        let state = {
+            balance: 100000,
+            marketFrozen: false,
+            childOrgs: 1,
+            logs: []
+        };
+
+        const updateBalance = (amount) => {
+            state.balance += amount;
+            document.getElementById('simBalance').innerText = state.balance.toLocaleString();
+        };
+
+        const logGod = (msg) => {
+            const log = document.getElementById('godLog');
+            log.innerHTML += `> ${msg}<br>`;
+            log.scrollTop = log.scrollHeight;
+        };
+
+        // --- 2. NAVIGATION ---
+        function switchModule(id) {
+            // UI Update
+            document.querySelectorAll('.module-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active-nav', 'bg-cyan-500/10', 'border-cyan-500/30'));
+            event.currentTarget.classList.add('active-nav', 'bg-cyan-500/10', 'border-cyan-500/30');
+
+            // Set Title
+            const titles = {
+                'tokenomics': '代币经济学',
+                'governance': '治理层级',
+                'identity': '身份合规',
+                'market': '市场交易',
+                'godmode': '上帝模式'
+            };
+            document.getElementById('currentView').innerText = titles[id];
+        }
+
+        // --- 3. TOKENOMICS CHART ---
+        const ctx = document.getElementById('tokenChart').getContext('2d');
+        const tokenChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['生态激励 (30%)', '市场流通 (25%)', '合规储备 (20%)', '团队锁仓 (15%)', '机构质押 (10%)'],
+                datasets: [{
+                    data: [30, 25, 20, 15, 10],
+                    backgroundColor: ['#3b82f6', '#ef4444', '#10b981', '#eab308', '#a855f7'],
+                    borderColor: '#0b0b1e',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+
+        function showInfo(type) {
+            const info = {
+                'ecosystem': '交易挖矿奖励来源。每笔交易完成后，买家从这里获得随机 HKC。',
+                'liquidity': '由 Root 管理，用于在交易所（如 Uniswap）提供初始流动性。',
+                'reserve': '最关键的资金池。所有 Slash 罚款、2% 交易手续费都流入这里。用于监管兜底。',
+                'team': '智能合约强制锁定。每半年释放 25%，防止团队砸盘。',
+                'staking': 'Identity 模块专用。机构申请加入时，部分质押金会通过此池流转。'
+            };
+            Swal.fire({
+                title: type.toUpperCase(),
+                text: info[type],
+                icon: 'info',
+                background: '#0b0b1e',
+                color: '#fff',
+                confirmButtonColor: '#00dbde'
+            });
+        }
+
+        // --- 4. GOVERNANCE ---
+        function createProposal() {
+            Swal.fire({
+                title: '发起 Type 2 提案',
+                text: "建立新子机构需质押 10,000 HKC。确认支付？",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: '支付并提案',
+                background: '#0b0b1e',
+                color: '#fff',
+                confirmButtonColor: '#00dbde'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    if(state.balance < 10000) {
+                        Swal.fire('余额不足', '您没有足够的 HKC 支付质押金。', 'error');
+                        return;
+                    }
+                    
+                    updateBalance(-10000);
+                    state.childOrgs++;
+                    
+                    // Add visual node
+                    const container = document.getElementById('childContainer');
+                    const newNode = document.createElement('div');
+                    newNode.className = "interactive-node w-36 p-3 bg-cyan-900/30 border border-cyan-500 rounded text-center relative animate-[fadeIn_0.5s]";
+                    newNode.innerHTML = `
+                        <div class="text-xs text-cyan-300 uppercase font-bold">Child Org #${state.childOrgs}</div>
+                        <div class="font-bold text-white">New Tech Ltd</div>
+                        <div class="text-[10px] text-gray-400 mt-1">区域: HK</div>
+                    `;
+                    container.appendChild(newNode);
+                    
+                    Swal.fire({
+                        title: '提案通过',
+                        text: '质押金已锁定，子机构已创建。',
+                        icon: 'success',
+                        background: '#0b0b1e',
+                        color: '#fff'
+                    });
+                }
+            });
+        }
+
+        // --- 5. IDENTITY ---
+        function runComplianceCheck() {
+            const region = document.getElementById('idRegion').value;
+            const status = document.getElementById('idIssuerStatus').value;
+            const resultBox = document.getElementById('checkResult');
+            
+            resultBox.classList.remove('hidden');
+            resultBox.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking Smart Contract...';
+
+            setTimeout(() => {
+                // Logic
+                let passed = true;
+                let msg = "用户合规，允许访问。";
+                
+                if (region === 'NK') {
+                    passed = false;
+                    msg = "制裁拦截：该区域 (NK) 在全局黑名单中。";
+                } else if (region === 'US') {
+                    passed = false;
+                    msg = "地理围栏：HK 资产不向 US 用户开放。";
+                }
+                
+                if (status !== 'active') {
+                    passed = false;
+                    msg += " <br>机构错误：发行机构非活跃状态，用户身份冻结。";
+                }
+
+                if (passed) {
+                    resultBox.className = "mt-6 p-4 rounded bg-green-900/30 border border-green-500 text-green-300 text-center";
+                    resultBox.innerHTML = `<i class="fas fa-check-circle text-2xl mb-2"></i><br><strong>PASSED</strong><br>${msg}`;
+                } else {
+                    resultBox.className = "mt-6 p-4 rounded bg-red-900/30 border border-red-500 text-red-300 text-center";
+                    resultBox.innerHTML = `<i class="fas fa-ban text-2xl mb-2"></i><br><strong>REJECTED</strong><br>${msg}`;
+                }
+            }, 800);
+        }
+
+        // --- 6. MARKET ---
+        function executeTrade() {
+            if (state.marketFrozen) {
+                Swal.fire({
+                    title: '交易失败',
+                    text: 'Root 管理员已开启全局停牌模式 (God Mode)。',
+                    icon: 'error',
+                    background: '#0b0b1e',
+                    color: '#fff'
+                });
+                return;
+            }
+
+            const price = 1000;
+            const fee = price * 0.02; // 20
+            const sellerAmt = price * 0.98; // 980
+            const reward = Math.floor(Math.random() * 50) + 10; // Mining reward
+
+            updateBalance(-price + reward);
+
+            // Log
+            const logDiv = document.getElementById('txLog');
+            const time = new Date().toLocaleTimeString();
+            const logEntry = `
+                <div class="border-b border-gray-800 pb-1 mb-1">
+                    <span class="text-gray-500">[${time}]</span> <span class="text-white">Buy Asset #8821</span><br>
+                    <span class="text-red-400">-${price} HKC</span> (Buyer)<br>
+                    <span class="text-green-600"> -> +${sellerAmt} (Seller)</span><br>
+                    <span class="text-green-600"> -> +${fee} (Reserve 2%)</span><br>
+                    <span class="text-yellow-400"> -> +${reward} HKC (Mining Reward)</span>
+                </div>
+            `;
+            logDiv.innerHTML = logEntry + logDiv.innerHTML;
+
+            // Animation
+            const flowDiv = document.getElementById('moneyFlow');
+            flowDiv.classList.remove('hidden');
+            flowDiv.classList.add('flex');
+            
+            anime({
+                targets: '#animCoin',
+                translateX: [0, 200],
+                easing: 'easeInOutQuad',
+                duration: 1000,
+                complete: function() {
+                    document.getElementById('animCoin').style.transform = 'translateY(-50%) translateX(0)';
+                    setTimeout(() => { flowDiv.classList.add('hidden'); }, 500);
+                }
+            });
+        }
+
+        // --- 7. GOD MODE ---
+        function toggleMarketFreeze() {
+            state.marketFrozen = document.getElementById('godFreezeToggle').checked;
+            const statusPanel = document.getElementById('marketStatusPanel');
+            
+            if(state.marketFrozen) {
+                logGod("ACTION: Global Market Paused.");
+                statusPanel.classList.add('bg-red-900', 'border-red-500');
+                statusPanel.innerHTML = '<strong class="text-white"><i class="fas fa-lock"></i> MARKET FROZEN BY REGULATOR</strong>';
+            } else {
+                logGod("ACTION: Global Market Resumed.");
+                statusPanel.classList.remove('bg-red-900', 'border-red-500');
+                // lazy reset innerhtml
+                statusPanel.innerHTML = `
+                    <div class="flex gap-4">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                            <span class="text-sm font-bold text-green-400">市场状态: 活跃</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                            <span class="text-sm font-bold text-blue-400">资产: TRE</span>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-500 font-mono">Contract: 0x...RWA</div>
+                `;
+            }
+        }
+
+        function killSwitch() {
+            Swal.fire({
+                title: 'WARNING: KILL SWITCH',
+                text: "此操作将吊销所有二级机构及其用户身份。不可逆！",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'CONFIRM REVOKE',
+                background: '#0b0b1e',
+                color: '#fff'
+            }).then((result) => {
+                if(result.isConfirmed) {
+                    logGod("CRITICAL: Kill Switch Activated. All Childs Revoked.");
+                    document.getElementById('childContainer').innerHTML = ''; // Wipe children
+                    Swal.fire('Executed', '系统已清空所有下级机构。', 'success');
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
