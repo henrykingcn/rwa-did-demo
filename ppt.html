@@ -134,35 +134,44 @@
 
         /* --- APP EMBEDDING STYLES --- */
         
-        /* The Floating "Live Demo" Button */
-        #app-trigger {
-            position: fixed;
-            top: 25px;
-            right: 25px;
-            z-index: 100;
-            padding: 10px 20px;
-            background: rgba(0, 219, 222, 0.1);
-            border: 1px solid var(--neon-cyan);
-            border-radius: 30px;
-            color: var(--neon-cyan);
-            font-family: 'Inter', sans-serif;
-            font-weight: 600;
-            font-size: 0.8rem;
-            cursor: pointer;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
-            box-shadow: 0 0 15px rgba(0, 219, 222, 0.2);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        /* 右上角悬浮容器 */
+#floating-controls {
+    position: fixed;
+    top: 25px;
+    right: 25px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column; /* 垂直排列，或者改成 row 横向排列 */
+    gap: 10px; /* 按钮之间的间距 */
+    align-items: flex-end;
+}
 
-        #app-trigger:hover {
-            background: var(--neon-cyan);
-            color: #000;
-            box-shadow: 0 0 30px rgba(0, 219, 222, 0.6);
-            transform: scale(1.05);
-        }
+/* 通用按钮样式 */
+.app-trigger-btn {
+    padding: 10px 20px;
+    background: rgba(0, 219, 222, 0.1);
+    border: 1px solid var(--neon-cyan);
+    border-radius: 30px;
+    color: var(--neon-cyan);
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.8rem;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
+    box-shadow: 0 0 15px rgba(0, 219, 222, 0.2);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: fit-content;
+}
+
+.app-trigger-btn:hover {
+    background: var(--neon-cyan);
+    color: #000;
+    box-shadow: 0 0 30px rgba(0, 219, 222, 0.6);
+    transform: scale(1.05);
+}
 
         /* The Fullscreen Overlay */
         #app-overlay {
@@ -224,9 +233,18 @@
 <body>
     <div id="cursor-light"></div>
 
-    <button id="app-trigger" onclick="openApp()">
-        <i class="fas fa-desktop"></i> Open RWA Platform
+    <!-- GLOBAL BUTTONS CONTAINER -->
+<div id="floating-controls">
+    <!-- 按钮 1: 原有的 Platform -->
+    <button class="app-trigger-btn" onclick="openApp('https://rwa.henryhl.wang/index.html')">
+        <i class="fas fa-desktop"></i> Platform Demo
     </button>
+    
+    <!-- 按钮 2: 新增的 Logic Map -->
+    <button class="app-trigger-btn" onclick="openApp('https://rwa.henryhl.wang/logic.html')">
+        <i class="fas fa-project-diagram"></i> Logic Map
+    </button>
+</div>
 
     <div id="app-overlay">
         <iframe id="app-frame" src="about:blank"></iframe>
@@ -653,19 +671,18 @@
         // 注意：Iframe 必须是 HTTPS，否则在大多数服务器上会被拦截
         const targetUrl = "https://rwa.henryhl.wang/index.html"; 
 
-        function openApp() {
-            // Load URL only on first click to ensure it's fresh, 
-            // but check if it's already set to avoid reloading on every toggle if you prefer
-            if (appFrame.src === "about:blank") {
-                appFrame.src = targetUrl;
-            }
-            
-            appOverlay.style.display = 'flex';
-            // Slight delay to allow CSS transition to catch the display change
-            setTimeout(() => {
-                appOverlay.classList.add('visible');
-            }, 10);
-        }
+        function openApp(url) {
+    // 只有当 iframe 的地址和请求的地址不一样时，才去加载新地址
+    // 这样避免重复点击同一个按钮时刷新
+    if (appFrame.src !== url) {
+        appFrame.src = url;
+    }
+    
+    appOverlay.style.display = 'flex';
+    setTimeout(() => {
+        appOverlay.classList.add('visible');
+    }, 10);
+}
 
         function closeApp() {
             appOverlay.classList.remove('visible');
