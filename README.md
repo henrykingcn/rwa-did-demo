@@ -2,7 +2,7 @@
 
 > **🔥 LIVE DEMO AVAILABLE NOW: [rwa.henryhl.wang](http://rwa.henryhl.wang) 🔥**
 >
-> ** Presentation Sildes at: [rwa.henryhl.wang/ppt](http://rwa.henryhl.wang/ppt) **
+> **Presentation Sildes at: [rwa.henryhl.wang/ppt](http://rwa.henryhl.wang/ppt)**
 >
 > Don't just read the code—**experience the future** of Real-World Asset compliance! We have deployed the full interactive system online. Visit our official site to witness the next generation of decentralized identity verification in action. 🚀
 
