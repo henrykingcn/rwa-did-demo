@@ -113,4 +113,4 @@ Once deployed, you can interact with the contract functions under the "Deployed 
 
 ## 📄 License
 
-[Choose a license, e.g., MIT]
+MIT
